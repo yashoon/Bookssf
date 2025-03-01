@@ -5,9 +5,9 @@ import ChapterListScreen from './screens/ChapterListScreen';
 import ChapterContentScreen from './screens/ChapterContentScreen';
 import WelcomeScreen from './screens/WelcomeScreen';
 import SQLite from 'react-native-sqlite-storage';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 // import './i18n'; // Import i18n configuration
-import { getUsers, initializeDatabase, insertChapters } from './database/Database';
+import { insertChapters } from './database/Database';
 import { getDBConnection, createTable, getPreDBConnection } from './database/Database';
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 
@@ -22,7 +22,7 @@ const Stack = createStackNavigator();
 
 export default function App() {
 
-  const [users, setUsers] = React.useState([]);
+  const [users, setUsers] = useState([]);
 
   const loadDataCallback = async () => {
     try {

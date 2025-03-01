@@ -30,6 +30,9 @@ const ChapterContentScreen = ({ route }) => {
   //const chapter = chapterContents[chapterId] || {};
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const myObject = {};
+
+
 
   function getContents(chapterId){
     console.log("this is changing text")
@@ -42,6 +45,11 @@ const ChapterContentScreen = ({ route }) => {
         getUsers(db, 'contents').then((users) => {
             console.log("This is content List::::::: " + users)
             setContents(users);
+            // Convert array to object
+            users.forEach(item => {
+              myObject[item.chapter_id] = item;
+            });
+            console.log("This is myObject::::::: " + myObject)
             console.log("This is Content List::::::: " + users)
             setLoading(false);
         }, (error) => {
@@ -54,6 +62,10 @@ const ChapterContentScreen = ({ route }) => {
     // console.log('Chapters: ', chapters);
   }, [chapterId]);
     console.log("after effect -----" + contents[chapterId]?.content);
+    console.log(myObject)
+    contents.forEach(item => {
+      myObject[item.chapter_id] = item;
+    });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -64,7 +76,17 @@ const ChapterContentScreen = ({ route }) => {
       <Text style={styles.content}>Bangaram</Text> */}
       {/* <Text style={styles.title}>{t(contents[chapterId].chapter_id)}yash</Text>
       <Text style={styles.content}>{t(contents[chapterId].content)}Bangaram</Text> */}
-      { loading || (typeof contents[chapterId]?.content === "undefined") ? (
+      { 
+      // loading || (typeof contents[chapterId]?.content === "undefined") ? (
+        
+      //   <View style={{ alignItems: 'center' }}>
+      //     <ActivityIndicator size="large" color="blue" />
+      //     <Text style={{ marginTop: 10, fontSize: 18, color: 'gray' }}>
+      //       No content found ...
+      //     </Text>
+      //   </View>
+      // ) : 
+      loading || (typeof myObject[chapterId]?.content === "undefined") ? (
         
         <View style={{ alignItems: 'center' }}>
           <ActivityIndicator size="large" color="blue" />
@@ -72,10 +94,13 @@ const ChapterContentScreen = ({ route }) => {
             No content found ...
           </Text>
         </View>
-      ) : (
+      ) : 
+      (
       <View>
-      <Text style={styles.title}>{contents[chapterId]?.chapter_id}</Text> 
-      <Text style={styles.content}>{contents[chapterId]?.content}</Text>
+      {/* <Text style={styles.title}>{contents[chapterId]?.chapter_id}</Text>  */}
+      <Text style={styles.title}>{myObject[chapterId]?.chapter_id}</Text> 
+      <Text style={styles.content}>{myObject[chapterId]?.content}</Text> 
+      {/* <Text style={styles.content}>{contents[chapterId]?.content}</Text> */}
       </View>
       )
       }

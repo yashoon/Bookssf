@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState }  from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SectionList } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDBConnection, getUsers, getUsers1, getPreDBConnection } from '../database/Database';
-import { useEffect, useState } from 'react';
 import TOC from '../components/TOC/TOC';
 
 const chapters = [
@@ -32,16 +31,16 @@ const ChapterListScreen = ({ navigation }) => {
 console.log("this is rendering page")
   return (
     <SafeAreaView style={styles.container}>
-    {/* <View>
-      <TOC />
-    </View> */}
+    <View>
+      <TOC navigation={navigation}/>
+    </View>
     <View>
       <Text style={styles.title}>Table of Contents</Text>
      <FlatList
         data={chapters}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity style={[styles.chapter]} onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id-1 })}>
+          <TouchableOpacity style={[styles.chapter]} onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id })}>
             <Text style={styles.chapterText}>{item.id+ ". " + (item.default_title).trim()}</Text>
           </TouchableOpacity>
         )}
@@ -55,7 +54,7 @@ console.log("this is rendering page")
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 5 },
   scontainer: { flex: 1, padding: 5, backgroundColor: 'skyblue' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10,marginTop:-50, textAlign: 'center' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10,marginTop:0, textAlign: 'center' },
   chapter: { padding: 10, marginVertical: 0, borderRadius: 0, borderTopWidth: 1, 
     borderColor: 'gray' ,
     borderbottomWidth: 0,
