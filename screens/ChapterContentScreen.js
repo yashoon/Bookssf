@@ -99,6 +99,7 @@ const ChapterContentScreen = ({ route }) => {
       <View>
       {/* <Text style={styles.title}>{contents[chapterId]?.chapter_id}</Text>  */}
       <Text style={styles.title}>{myObject[chapterId]?.chapter_id}</Text> 
+      <Text style={styles.content_id}>{myObject[chapterId]?.content_id}</Text> 
       <Text style={styles.content}>{myObject[chapterId]?.content}</Text> 
       {/* <Text style={styles.content}>{contents[chapterId]?.content}</Text> */}
       </View>

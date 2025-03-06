@@ -31,9 +31,9 @@ const ChapterListScreen = ({ navigation }) => {
 console.log("this is rendering page")
   return (
     <SafeAreaView style={styles.container}>
-    <View>
+    {/* <View>
       <TOC navigation={navigation}/>
-    </View>
+    </View> */}
     <View>
       <Text style={styles.title}>Table of Contents</Text>
      <FlatList
