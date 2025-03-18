@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, SectionList } from 
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDBConnection, getUsers, getUsers1, getPreDBConnection } from '../database/Database';
-import TOC from '../components/TOC/TOC';
+import MultiLevelAccordion from '../components/Accordion/Accordion';
 
 const chapters = [
   { id: '1', title: 'The Bible' },
@@ -19,10 +19,10 @@ const ChapterListScreen = ({ navigation }) => {
   useEffect(() => { 
     getPreDBConnection().then((db) => {
         getUsers(db, 'Chapters').then((users) => {
-            console.log("This is chapter List::::::: " + users)
-            console.log("chapter in Json: " + JSON.stringify(users))
+            // console.log("This is chapter List::::::: " + users)
+            // console.log("chapter in Json: " + JSON.stringify(users))
             setChapters(users);
-            console.log("This is chapter List::::::: " + users)
+            // console.log("This is chapter List::::::: " + users)
         });   
     });
     // loadDataCallback();
@@ -34,14 +34,19 @@ console.log("this is rendering page")
     {/* <View>
       <TOC navigation={navigation}/>
     </View> */}
+    <MultiLevelAccordion />
     <View>
       <Text style={styles.title}>Table of Contents</Text>
      <FlatList
         data={chapters}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity style={[styles.chapter]} onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id })}>
-            <Text style={styles.chapterText}>{item.id+ ". " + (item.default_title).trim()}</Text>
+          <TouchableOpacity style={
+            [styles.chapter]
+            } onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id })}>
+            <Text style={[styles.chapterText,
+              item.parent_chapter == 0 ? styles.ListTitle : styles.subchapter
+            ]}>{item.id+ ". " + (item.default_title).trim()}</Text>
           </TouchableOpacity>
         )}
       />
@@ -60,6 +65,13 @@ const styles = StyleSheet.create({
     borderbottomWidth: 0,
     backgroundColor: 'cement',
     mouseover: '',
+  },
+  ListTitle: {
+    color: '#ff5733',
+    fontWeight: 'bold'
+  },
+  subchapter: {
+    color: 'orange',
   },
   chapterText: { fontSize: 18, textTransform: 'capitalize' },
   liststyle: { flex: 1, padding: 5, backgroundColor: 'skyblue' },

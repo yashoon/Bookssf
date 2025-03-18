@@ -12,6 +12,29 @@ export const getDBConnection = async () => {
   );
 };
 
+// Fetch Nested TOC from Database
+// export const fetchTOC = (callback) => {
+//   data_db.transaction((tx) => {
+//     tx.executeSql(
+//       "SELECT * FROM CHAPTERS",
+//       [],
+//       (_, results) => {
+//         let rows = results.rows.raw();
+
+//         // Convert flat list into nested structure
+//         const buildHierarchy = (parentId = null) => {
+//           return rows
+//             .filter((item) => item.parent_chapter === parentId)
+//             .map((item) => ({ ...item, subchapters: buildHierarchy(item.chapter_number) }));
+//         };
+
+//         callback(buildHierarchy());
+//       },
+//       (error) => console.error("Error fetching data", error)
+//     );
+//   });
+// };
+
 export const getPreDBConnection = async () => {
   console.log('Opening database ...');
   // opening a pre-populated database in the app bundle (best scenario) 
