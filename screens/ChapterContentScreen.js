@@ -145,7 +145,7 @@ const ChapterContentScreen = ({ route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
+  container: { flex: 1, padding: 20, lineHeight: 100, textAlign: 'justify' },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
   content: { fontSize: 16, lineHeight: 24, textAlign: 'justify' },
 });

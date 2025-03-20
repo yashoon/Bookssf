@@ -34,7 +34,7 @@ console.log("this is rendering page")
     {/* <View>
       <TOC navigation={navigation}/>
     </View> */}
-    <MultiLevelAccordion />
+    {/* <MultiLevelAccordion /> */}
     <View>
       <Text style={styles.title}>Table of Contents</Text>
      <FlatList
