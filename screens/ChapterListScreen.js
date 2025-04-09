@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDBConnection, getUsers, getUsers1, getPreDBConnection } from '../database/Database';
 import MultiLevelAccordion from '../components/Accordion/Accordion';
+import TOC from '../components/TOC/TOC';
+import { ScrollView } from 'react-native-gesture-handler';
 
 const chapters = [
   { id: '1', title: 'The Bible' },
@@ -31,13 +33,14 @@ const ChapterListScreen = ({ navigation }) => {
 console.log("this is rendering page")
   return (
     <SafeAreaView style={styles.container}>
-    {/* <View>
-      <TOC navigation={navigation}/>
-    </View> */}
+
     {/* <MultiLevelAccordion /> */}
     <View>
+    {/* <ScrollView>
+      <TOC navigation={navigation}/>
+    </ScrollView>  */}
       <Text style={styles.title}>Table of Contents</Text>
-     <FlatList
+     { <FlatList
         data={chapters}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -49,8 +52,9 @@ console.log("this is rendering page")
             ]}>{item.id+ ". " + (item.default_title).trim()}</Text>
           </TouchableOpacity>
         )}
-      />
+      /> }
       {/* <TOCTreeView /> */}
+
     </View>
     </SafeAreaView>
   );

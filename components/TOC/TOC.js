@@ -41,7 +41,7 @@ if (chapters[i].parent_chapter == null){
             transformedData.push(<TouchableOpacity  onPress={() => navigation.navigate('ChapterContent', { chapterId: chapters[j].chapter_number })}>
                         <Text style={{color: 'blue'}}>
                             {/* {chapters[j].chapter_number}.  */}
-                            {chapters[j].default_title}
+                               "Sub" + {chapters[j].default_title}
                             </Text>
                       </TouchableOpacity>)
             // transformedData.push(<Text style={{ color: 'blue' }} key={j}> Child{chapters[j].default_title}</Text>)
