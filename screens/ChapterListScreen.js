@@ -33,12 +33,7 @@ const ChapterListScreen = ({ navigation }) => {
 console.log("this is rendering page")
   return (
     <SafeAreaView style={styles.container}>
-
-    {/* <MultiLevelAccordion /> */}
     <View>
-    {/* <ScrollView>
-      <TOC navigation={navigation}/>
-    </ScrollView>  */}
       <Text style={styles.title}>Table of Contents</Text>
      { <FlatList
         data={chapters}
@@ -53,7 +48,6 @@ console.log("this is rendering page")
           </TouchableOpacity>
         )}
       /> }
-      {/* <TOCTreeView /> */}
 
     </View>
     </SafeAreaView>

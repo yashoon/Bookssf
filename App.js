@@ -10,6 +10,15 @@ import { useEffect, useState } from 'react';
 import { insertChapters } from './database/Database';
 import { getDBConnection, createTable, getPreDBConnection } from './database/Database';
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
+import 'react-native-gesture-handler';
+import { enableScreens } from 'react-native-screens';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import TabNavigator from './navigation/TabNavigator'
+
+const Tab = createBottomTabNavigator();
+enableScreens();
+
 
 
 const Stack = createStackNavigator();
@@ -60,10 +69,11 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: true }}>
+      <Stack.Navigator screenOptions={{ headerShown: true, headerLeft: null, headerTitleAlign: 'center' }}>
         <Stack.Screen name="Welcome" component={WelcomeScreen} screenOptions={{headerShown: false}}/>
-        <Stack.Screen name="ChapterList" component={ChapterListScreen} />
-        <Stack.Screen name="ChapterContent" component={ChapterContentScreen} />
+        <Stack.Screen name="Shepherd's Staff" component={TabNavigator} />
+        {/* <Stack.Screen name="ChapterList" component={ChapterListScreen} /> */}
+        {/* <Stack.Screen name="ChapterContent" component={ChapterContentScreen} /> */}
       </Stack.Navigator>
     </NavigationContainer>
   );
