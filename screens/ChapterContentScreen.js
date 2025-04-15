@@ -1,13 +1,12 @@
 import React, {useState, useEffect} from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator, Button, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import Header from '../components/Header';
 import { ScrollView } from 'react-native-gesture-handler';
 import { getPreDBConnection, getUsers } from '../database/Database';
 // import { NavigationContainer } from 'react-navigation/native';
 import RenderHTML from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
-import TabNavigator from '../navigation/TabNavigator';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const source = {
@@ -33,8 +32,29 @@ const ChapterContentScreen = ({ navigation, route }) => {
   const decreaseFont = () => setFontSize((prev) => (prev > 10 ? prev - 2 : prev));
   const myObject = {};
 
-  const goToChapter = (chapterId) => {
-    navigation.navigate('ChapterContent', { chapterId }); // use replace to avoid stack buildup
+  // const goToChapter = (chapterId) => {
+  //   console.log("saving in async from next and previous buttons" + chapterId)
+  //   saveLastReadChapter(chapterId);
+  //   navigation.navigate('ChapterContent', { chapterId }); // use replace to avoid stack buildup
+  // };
+  const goToChapter = async (chapterId) => {
+    try {
+      console.log("saving in async from next and previous buttons " + chapterId);
+      await saveLastReadChapter(chapterId);
+    } catch (e) {
+      console.log('Error during save:', e);
+      // Optionally show a toast or fallback
+    }
+    navigation.navigate('ChapterContent', { chapterId });
+  };
+
+  const saveLastReadChapter = async (chapterId) => {
+    try {
+      console.log("this is Async saving chapterId" + chapterId)
+      await AsyncStorage.setItem('lastReadChapter', chapterId.toString());
+    } catch (e) {
+      console.log('Error saving last read chapter:', e);
+    }
   };
 
   function getContents(chapterId){
@@ -50,7 +70,8 @@ const ChapterContentScreen = ({ navigation, route }) => {
             setContents(users);
             // Convert array to object
             users.forEach(item => {
-              myObject[item.chapter_id] = item;
+              // myObject[item.chapter_id] = item;
+              myObject[item.id] = item;
             });
             console.log("This is myObject::::::: " + myObject)
             console.log("This is Content List::::::: " + users)
@@ -64,11 +85,15 @@ const ChapterContentScreen = ({ navigation, route }) => {
     // loadDataCallback();
     // console.log('Chapters: ', chapters);
     setCurrentChapterId(chapterId);
+    // if (currentChapterId) {
+    //   saveLastReadChapter(currentChapterId);
+    // }
   }, [chapterId? chapterId : 1]);
     console.log("after effect -----" + contents[chapterId]?.content);
     console.log(myObject)
     contents.forEach(item => {
-      myObject[item.chapter_id] = item;
+      // myObject[item.chapter_id] = item;
+      myObject[item.id] = item;
     });
 
   return (
