@@ -36,6 +36,8 @@ const TabNavigator = () => {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        tabBarActiveTintColor: 'rgb(4, 118, 40)', // active tab color (purple-ish)
+        tabBarInactiveTintColor: 'rgb(68, 72, 69)', // inactive tab color (gray)
         tabBarIcon: ({ color, size }) => {
           const iconName = route.name === 'ChapterList' ? 'list-outline' : 'book-outline';
           return <Icon name={iconName} size={size} color={color} />;

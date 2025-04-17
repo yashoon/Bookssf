@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
   image: { width: 300, height: 300, resizeMode: 'contain' },
   title: { fontSize: 24, fontWeight: 'bold', marginVertical: 2},
-  button: { backgroundColor: '#007bff', padding: 15, borderRadius: 10 },
+  button: { backgroundColor: 'rgb(4, 118, 40)', padding: 15, borderRadius: 10 },
   buttonText: { color: '#fff', fontSize: 18 },
 });
 

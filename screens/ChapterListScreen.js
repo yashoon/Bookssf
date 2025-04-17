@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDBConnection, getUsers, getUsers1, getPreDBConnection } from '../database/Database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AppLayout from '../components/AppLayout';
 
 const chapters = [
   { id: '1', title: 'The Bible' },
@@ -61,7 +62,8 @@ const ChapterListScreen = ({ navigation }) => {
 
 console.log("this is rendering page")
   return (
-    <SafeAreaView style={styles.container}>
+    <AppLayout>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1 }}>
     <View>
       {/* <Text style={styles.title}>Table of Contents</Text> */}
      { <FlatList
@@ -100,6 +102,7 @@ console.log("this is rendering page")
     </Modal>
     </View>
     </SafeAreaView>
+    </AppLayout>
   );
 };
 
@@ -108,7 +111,7 @@ const styles = StyleSheet.create({
   scontainer: { flex: 1, padding: 5, backgroundColor: 'skyblue' },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10,marginTop:0, textAlign: 'center' },
   chapter: 
-  { padding: 5, 
+  { padding: 8, 
     marginVertical: 0, 
     borderRadius: 0, 
     borderTopWidth: 0.2, 
@@ -119,7 +122,8 @@ const styles = StyleSheet.create({
   },
   ListTitle: {
     color: 'rgb(202, 87, 11)',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    marginVertical: 4
   },
   subchapter: {
     fontSize: 16,

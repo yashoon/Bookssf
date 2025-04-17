@@ -7,6 +7,7 @@ import { getPreDBConnection, getUsers } from '../database/Database';
 import RenderHTML from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AppLayout from '../components/AppLayout';
 
 
 const source = {
@@ -97,18 +98,25 @@ const ChapterContentScreen = ({ navigation, route }) => {
     });
 
   return (
+    <AppLayout
+    fontSize={fontSize}
+    increaseFont={increaseFont}
+    decreaseFont={decreaseFont}
+    showFontControls={true}
+  >
     <SafeAreaView style={styles.container}>
+ 
     {/* <Header />  */}
     
   <View style={{ flex: 1 }}>
-  <View style={styles.controls}>
+  {/* <View style={styles.controls}>
     <TouchableOpacity onPress={decreaseFont} style={styles.fontButton}>
       <Text style={styles.buttonText}>A-</Text>
     </TouchableOpacity>
     <TouchableOpacity onPress={increaseFont} style={styles.fontButton}>
      <Text style={styles.buttonText}>A+</Text>
     </TouchableOpacity>
-  </View>
+  </View> */}
   
    <ScrollView>
     <View style={styles.container}>
@@ -133,6 +141,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
         strong: { fontWeight: 'bold' },
         em: { fontStyle: 'italic' },
       }}
+      defaultTextProps={{ selectable: true }} // This enables text selection
       />
       </View>
       )
@@ -148,7 +157,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
     onPress={() => goToChapter(currentChapterId - 1)}
     disabled={currentChapterId <= 1}
     style={[styles.circleButton, currentChapterId <= 1 && styles.disabledButton]}>
-    <Text style={styles.navText}>‹</Text>
+    <Text style={styles.arrowText}>‹</Text>
   </TouchableOpacity>
 
   <TouchableOpacity
@@ -159,8 +168,10 @@ const ChapterContentScreen = ({ navigation, route }) => {
     <Text style={styles.arrowText}>›</Text>
   </TouchableOpacity>
 </View>
-    
+
     </SafeAreaView>
+    </AppLayout>
+    
   );
 };
 
@@ -206,16 +217,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   navContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    paddingHorizontal: 40,
+    // flexDirection: 'row',
+    // justifyContent: 'space-between',
+    // marginTop: 20,
+    // paddingHorizontal: 40,
+    position: 'absolute', bottom: 20, left: 20, right: 20, flexDirection: 'row', justifyContent: 'space-between'
   },
   circleButton: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#007AFF',
+    backgroundColor: 'rgb(4, 118, 40)',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,

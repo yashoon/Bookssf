@@ -69,7 +69,7 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: true, headerLeft: null, headerTitleAlign: 'center' }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, headerLeft: null, headerTitleAlign: 'center' }}>
         <Stack.Screen name="Welcome" component={WelcomeScreen} screenOptions={{headerShown: false}}/>
         <Stack.Screen name="Shepherd's Staff" component={TabNavigator} />
         {/* <Stack.Screen name="ChapterList" component={ChapterListScreen} /> */}
