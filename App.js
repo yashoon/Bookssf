@@ -15,6 +15,10 @@ import { enableScreens } from 'react-native-screens';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import TabNavigator from './navigation/TabNavigator'
+import { FontSizeProvider } from './components/FontSizeContext/FontSizeContext';
+import Toast from 'react-native-toast-message';
+
+
 
 const Tab = createBottomTabNavigator();
 enableScreens();
@@ -68,6 +72,8 @@ export default function App() {
   }, []);
 
   return (
+    // <>
+    <FontSizeProvider>
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false, headerLeft: null, headerTitleAlign: 'center' }}>
         <Stack.Screen name="Welcome" component={WelcomeScreen} screenOptions={{headerShown: false}}/>
@@ -76,5 +82,8 @@ export default function App() {
         {/* <Stack.Screen name="ChapterContent" component={ChapterContentScreen} /> */}
       </Stack.Navigator>
     </NavigationContainer>
+    </FontSizeProvider>
+    // <Toast />
+    // </>
   );
 }

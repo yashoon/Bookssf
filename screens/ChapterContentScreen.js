@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator, Button, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -8,6 +8,8 @@ import RenderHTML from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
+import { WebView } from 'react-native-webview';
+import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
 
 
 const source = {
@@ -18,7 +20,8 @@ const source = {
 };
 
 const ChapterContentScreen = ({ navigation, route }) => {
-  console.log('Route:', route.params);
+
+  // console.log('Route:', route.params);
   const { chapterId } = route.params;
   // const { chapterId } = route.params?.chapterId ?? 2;
   //const { t } = useTranslation();
@@ -28,9 +31,11 @@ const ChapterContentScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [currentChapterId, setCurrentChapterId] = useState(chapterId);
   const maxChapterId = 10; // replace with the actual max chapter ID
-  const [fontSize, setFontSize] = useState(16); // default font size
-  const increaseFont = () => setFontSize((prev) => prev + 2);
-  const decreaseFont = () => setFontSize((prev) => (prev > 10 ? prev - 2 : prev));
+  // const [fontSize, setFontSize] = useFontSize();//useState(16); // default font size
+  const { fontSize, increaseFont, decreaseFont } = useFontSize();
+  const webViewRef = useRef(null); // create a ref for the WebView
+  // const increaseFont = () => setFontSize((prev) => prev + 2);
+  // const decreaseFont = () => setFontSize((prev) => (prev > 10 ? prev - 2 : prev));
   const myObject = {};
 
   // const goToChapter = (chapterId) => {
@@ -38,6 +43,29 @@ const ChapterContentScreen = ({ navigation, route }) => {
   //   saveLastReadChapter(chapterId);
   //   navigation.navigate('ChapterContent', { chapterId }); // use replace to avoid stack buildup
   // };
+
+  const updateFontSizeInWebView = (fontSize) => {
+    const jsCode = `
+      //  document.body.style.backgroundColor = 'lightyellow';
+      document.body.style.fontSize = '${fontSize}px';
+      true; // note: this is required for the webview to work properly
+    `;
+    webViewRef.current?.injectJavaScript(jsCode);
+  };
+
+  const injectedJavaScript = `
+    const style = document.createElement('style');
+    style.innerHTML = 'html { font-size: ${fontSize}px;transition: none; }';
+    document.head.appendChild(style);
+    true; // Required to indicate successful injection
+  `;
+
+  const handleLoadEnd = () => {
+    if (webViewRef.current) {
+      webViewRef.current.injectJavaScript(injectedJavaScript);
+    }
+  };
+
   const goToChapter = async (chapterId) => {
     try {
       console.log("saving in async from next and previous buttons " + chapterId);
@@ -86,10 +114,13 @@ const ChapterContentScreen = ({ navigation, route }) => {
     // loadDataCallback();
     // console.log('Chapters: ', chapters);
     setCurrentChapterId(chapterId);
+    //update font size
+    updateFontSizeInWebView(fontSize);
     // if (currentChapterId) {
     //   saveLastReadChapter(currentChapterId);
     // }
-  }, [chapterId? chapterId : 1]);
+    console.log('📦 FontSizeProvider rendered. Current fontSize:', fontSize);
+  }, [chapterId? chapterId : 1, fontSize]);
     console.log("after effect -----" + contents[chapterId]?.content);
     console.log(myObject)
     contents.forEach(item => {
@@ -98,27 +129,16 @@ const ChapterContentScreen = ({ navigation, route }) => {
     });
 
   return (
+    // <FontSizeProvider>
     <AppLayout
     fontSize={fontSize}
     increaseFont={increaseFont}
     decreaseFont={decreaseFont}
     showFontControls={true}
-  >
+    >
     <SafeAreaView style={styles.container}>
- 
-    {/* <Header />  */}
     
   <View style={{ flex: 1 }}>
-  {/* <View style={styles.controls}>
-    <TouchableOpacity onPress={decreaseFont} style={styles.fontButton}>
-      <Text style={styles.buttonText}>A-</Text>
-    </TouchableOpacity>
-    <TouchableOpacity onPress={increaseFont} style={styles.fontButton}>
-     <Text style={styles.buttonText}>A+</Text>
-    </TouchableOpacity>
-  </View> */}
-  
-   <ScrollView>
     <View style={styles.container}>
       {
       loading || (typeof myObject[chapterId]?.content === "undefined") ? (
@@ -131,26 +151,25 @@ const ChapterContentScreen = ({ navigation, route }) => {
         </View>
       ) : 
       (
-      <View>
-      {/* <Text style={styles.content_id}>{myObject[chapterId]?.content_id}</Text>  */}
-      <RenderHTML contentWidth={width} source={{ html: myObject[chapterId]?.content }} 
-      tagsStyles={{
-        h1: { fontSize: fontSize + 12, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
-        h4: { fontSize: fontSize, fontWeight: 'bold', marginBottom: 0, textAlign: 'left' },
-        p: { fontSize: fontSize, lineHeight: 24, marginBottom: 10 },
-        strong: { fontWeight: 'bold' },
-        em: { fontStyle: 'italic' },
-      }}
-      defaultTextProps={{ selectable: true }} // This enables text selection
+      <View style={{ flex: 1 }}>
+      <WebView
+        ref={webViewRef}
+        originWhitelist={['*']}
+        // source={{ html: myObject[chapterId]?.content }}
+        source={{ html: `<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body>${myObject[chapterId]?.content}</body></html>` }}
+        style={{flex: 1 }}
+        // injectedJavaScript={injectedJavaScript}
+        javaScriptEnabled={true}
+        onLoadEnd={handleLoadEnd}
       />
       </View>
       )
       }
     </View>
-    </ScrollView>
+    {/* </ScrollView> */}
     </View>
 
-    //adding buttons for chapter navigation
+    {/* adding buttons for chapter navigation */}
 
 <View style={styles.navContainer}>
   <TouchableOpacity
@@ -171,15 +190,22 @@ const ChapterContentScreen = ({ navigation, route }) => {
 
     </SafeAreaView>
     </AppLayout>
+    // </FontSizeProvider>
     
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
+  container: { flex: 1, padding: 5 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
   content: { fontSize: 30, textAlign: 'justify', color:'red' },
   content_id: { fontSize: 15, textAlign: 'justify', color:'black' },
+  webview: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: 'red', // to see if it's rendering at all
+    // height: 500,
+  },
   controls: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -235,7 +261,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
-    opacity: 0.9,
+    opacity: 0.7,
   },
   arrowText: {
     color: 'white',

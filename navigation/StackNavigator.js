@@ -7,10 +7,12 @@ const Stack = createNativeStackNavigator();
 
 const StackNavigator = () => {
   return (
+    // <FontSizeProvider>
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="HomeTabs" component={TabNavigator} />
       {/* <Stack.Screen name="ChapterDetails" component={ChapterDetails} /> */}
     </Stack.Navigator>
+    // </FontSizeProvider> 
   );
 };
 
