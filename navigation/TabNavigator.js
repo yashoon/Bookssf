@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import ChapterListScreen from '../screens/ChapterListScreen';
 import ChapterContentScreen from '../screens/ChapterContentScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FontSizeProvider } from '../components/FontSizeContext/FontSizeContext';
 
 const Tab = createBottomTabNavigator();
 
@@ -33,6 +34,7 @@ const TabNavigator = () => {
     console.log("this is last read chapter >>>>>>>" + lastReadChapter)
 
   return (
+    <FontSizeProvider>
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -47,6 +49,7 @@ const TabNavigator = () => {
       <Tab.Screen name="ChapterList" component={ChapterListScreen} />
       <Tab.Screen name="ChapterContent" component={ChapterContentScreen} initialParams={{ chapterId: lastReadChapter ?? 1}}/>
     </Tab.Navigator>
+    </FontSizeProvider>
   );
 };
 
