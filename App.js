@@ -72,7 +72,7 @@ export default function App() {
   }, []);
 
   return (
-    <>
+    // <>
     <FontSizeProvider>
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false, headerLeft: null, headerTitleAlign: 'center' }}>
@@ -83,7 +83,7 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
     </FontSizeProvider>
-    <Toast />
-    </>
+    // <Toast />
+    // </>
   );
 }

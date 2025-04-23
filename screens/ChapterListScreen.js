@@ -12,8 +12,11 @@ const chapters = [
   { id: '3', title: 'Man and Satan' },
 ];
 
-const ChapterListScreen = ({ navigation }) => {
+const ChapterListScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
+  
+  const { section = 1 } = route.params || {};
+  console.log("This is chapter list screen: " + section)
 //   const { i18n } = useTranslation();
   const [chapters, setChapters] =  useState([]);
   const [lastReadChapter, setLastReadChapter] = useState(null);
@@ -54,6 +57,10 @@ const ChapterListScreen = ({ navigation }) => {
     navigation.navigate('ChapterContent', { chapterId: lastReadChapter });
   };
 
+  const filterChaptersBySection = (section) => {
+    return chapters.filter((chapters) => chapters.section === section);
+  };
+
   const handleStartFromBeginning = () => {
     setShowModal(false);
     navigation.navigate('ChapterContent', { chapterId: 1 });
@@ -67,7 +74,8 @@ console.log("this is rendering page")
     <View>
       {/* <Text style={styles.title}>Table of Contents</Text> */}
      { <FlatList
-        data={chapters}
+        // data={chapters}
+        data={filterChaptersBySection(section)}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity style={

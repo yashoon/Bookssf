@@ -9,7 +9,7 @@ import { useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
 import { WebView } from 'react-native-webview';
-import { FontSizeProvider, useFontSize } from '../components/FontSizeContext/FontSizeContext';
+import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
 
 
 const source = {
@@ -119,6 +119,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
     // if (currentChapterId) {
     //   saveLastReadChapter(currentChapterId);
     // }
+    console.log('📦 FontSizeProvider rendered. Current fontSize:', fontSize);
   }, [chapterId? chapterId : 1, fontSize]);
     console.log("after effect -----" + contents[chapterId]?.content);
     console.log(myObject)
@@ -128,13 +129,13 @@ const ChapterContentScreen = ({ navigation, route }) => {
     });
 
   return (
-    <FontSizeProvider>
+    // <FontSizeProvider>
     <AppLayout
     fontSize={fontSize}
     increaseFont={increaseFont}
     decreaseFont={decreaseFont}
     showFontControls={true}
-  >
+    >
     <SafeAreaView style={styles.container}>
     
   <View style={{ flex: 1 }}>
@@ -189,7 +190,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
 
     </SafeAreaView>
     </AppLayout>
-    </FontSizeProvider>
+    // </FontSizeProvider>
     
   );
 };

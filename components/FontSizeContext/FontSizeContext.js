@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import { Alert } from 'react-native';
 
 const FontSizeContext = createContext();
 
@@ -21,10 +22,20 @@ export const FontSizeProvider = ({ children }) => {
           }
         };
         loadFontSize();
+        // Alert.alert(
+        //     'Font Size Changed first',
+        //     `Font size has been changed to ${fontSize}`,
+        //     [{ text: 'OK' }],
+        //   );
       }, []);
     
       // Save font size to AsyncStorage whenever it changes
       useEffect(() => {
+        // Alert.alert(
+        //   'Font Size Changed',
+        //   `Font size has been changed to ${fontSize}`,
+        //   [{ text: 'OK' }],
+        // );
         AsyncStorage.setItem('fontSize', fontSize.toString());
       }, [fontSize]);
 

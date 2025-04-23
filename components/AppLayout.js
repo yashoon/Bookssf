@@ -22,10 +22,11 @@ export default function AppLayout({ children, fontSize, increaseFont, decreaseFo
         {showFontControls && 
         (<View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <TouchableOpacity onPress={decreaseFont} style={styles.button}>
-            <Text style={{ fontSize: 18, color: 'white'  }}>A−</Text>
+            <Text style={{ fontSize: 18, color: 'white'  }}>−</Text>
           </TouchableOpacity>
+          <Text style={{ fontSize: 18, color: 'white' }}>{fontSize}</Text>
           <TouchableOpacity onPress={increaseFont} style={styles.button}>
-            <Text style={{ fontSize: 18, color: 'white'  }}>A+</Text>
+            <Text style={{ fontSize: 18, color: 'white'  }}>+</Text>
           </TouchableOpacity>
         </View>
         )}
@@ -41,7 +42,8 @@ export default function AppLayout({ children, fontSize, increaseFont, decreaseFo
 
 const styles = StyleSheet.create({
     button: {
-        backgroundColor: 'rgba(6, 152, 52, 0.31)', // Sleek blue color for buttons
+        // backgroundColor: 'rgba(6, 152, 52, 0.31)', // Sleek blue color for buttons
+        backgroundColor: '#069834', // Sleek blue color for buttons
         paddingVertical: 5,
         paddingHorizontal: 20,
         borderRadius: 30, // Rounded corners
