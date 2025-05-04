@@ -126,28 +126,26 @@ export const getUsers = async (db, table) => {
   });
 });
 };
-// export const getUsers1 = async (db, table) => {
 
-//   console.log('Fetching users ...');
-//   return new Promise(resolve => {
-//     db.transaction(tx => {
-//       tx.executeSql(
-//         "SELECT sql FROM sqlite_master WHERE type='table'",
-//         [],
-//         (_, results) => {
-//           if (results.rows.length > 0) {
-//             console.log('Table Schemas:', results.rows.raw());
-//           } else {
-//             console.log('No table schemas found');
-//           }
-//         },
-//         error => {
-//           console.error('Error fetching schemas:', error);
-//         }
-//       );
-//     });
-// });
-// };
+export const getMaxChapterId = async (db, table) => {
+
+  // console.log('Fetching Max Chapter ID ...');
+  return new Promise(resolve => {
+  db.transaction(tx => {
+    tx.executeSql(
+      'SELECT max(id) as maxChapterID FROM ' + table + ';',
+      [],
+      (_, results) => {
+        // console.log('Results:', results);
+        const row = results.rows.item(0);
+        // console.log('✅ Max ID fetched:', row.maxChapterID);
+        resolve(row.maxChapterID);
+      },
+      error => console.error('Error fetching maxChapterID:', error)
+    );
+  });
+});
+};
 
 // export const createTable = async (db) => {
 //   db.transaction(tx => {

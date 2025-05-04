@@ -1,8 +1,8 @@
 import React, {useState, useEffect, useRef} from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator, Button, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Animated, ActivityIndicator, Button, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native-gesture-handler';
-import { getPreDBConnection, getUsers } from '../database/Database';
+import { getPreDBConnection, getUsers, getMaxChapterId } from '../database/Database';
 // import { NavigationContainer } from 'react-navigation/native';
 import RenderHTML from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
@@ -11,39 +11,30 @@ import AppLayout from '../components/AppLayout';
 import { WebView } from 'react-native-webview';
 import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
 
-
-const source = {
-  html: `
-<p style='text-align:center;'>
-  Hello World!
-</p>`
-};
+const MIN_DELTA = 10; // Minimum scroll distance
 
 const ChapterContentScreen = ({ navigation, route }) => {
 
-  // console.log('Route:', route.params);
   const { chapterId } = route.params;
-  // const { chapterId } = route.params?.chapterId ?? 2;
-  //const { t } = useTranslation();
-  //const chapter = chapterContents[chapterId] || {};
   const { width } = useWindowDimensions();
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentChapterId, setCurrentChapterId] = useState(chapterId);
-  const maxChapterId = 10; // replace with the actual max chapter ID
-  // const [fontSize, setFontSize] = useFontSize();//useState(16); // default font size
+  // const maxChapterId = 0; // replace with the actual max chapter ID
+  const [maxChapterId, setMaxChapterId] = useState(0);
   const { fontSize, increaseFont, decreaseFont } = useFontSize();
   const webViewRef = useRef(null); // create a ref for the WebView
-  // const increaseFont = () => setFontSize((prev) => prev + 2);
-  // const decreaseFont = () => setFontSize((prev) => (prev > 10 ? prev - 2 : prev));
   const myObject = {};
+  const [showUI, setShowUI] = useState(true);
+  const scrollOffset = useRef(0);
+  // const navigation = useNavigation();
+  const lastScrollY = useRef(0);
+  const lastToggleTime = useRef(Date.now());
+  const SCROLL_DEBOUNCE_MS = 300;
+  const MIN_SCROLL_DELTA = 15;
+  const translateY = useRef(new Animated.Value(0)).current; // 0 = visible, 100 = hidden
 
-  // const goToChapter = (chapterId) => {
-  //   console.log("saving in async from next and previous buttons" + chapterId)
-  //   saveLastReadChapter(chapterId);
-  //   navigation.navigate('ChapterContent', { chapterId }); // use replace to avoid stack buildup
-  // };
-
+  
   const updateFontSizeInWebView = (fontSize) => {
     const jsCode = `
       //  document.body.style.backgroundColor = 'lightyellow';
@@ -53,12 +44,21 @@ const ChapterContentScreen = ({ navigation, route }) => {
     webViewRef.current?.injectJavaScript(jsCode);
   };
 
+  //this is for changing font size
   const injectedJavaScript = `
     const style = document.createElement('style');
     style.innerHTML = 'html { font-size: ${fontSize}px;transition: none; }';
     document.head.appendChild(style);
     true; // Required to indicate successful injection
   `;
+
+  // this is for hiding and showing the header
+  const injectedJS = `
+  window.addEventListener('scroll', () => {
+    window.ReactNativeWebView.postMessage(window.scrollY.toString());
+  });
+  true;
+`;
 
   const handleLoadEnd = () => {
     if (webViewRef.current) {
@@ -91,6 +91,41 @@ const ChapterContentScreen = ({ navigation, route }) => {
     return null;
   };
 
+  const toggleUI = (visible) => {
+    setShowUI(visible);
+    navigation.setOptions({
+      headerShown: false,
+      tabBarStyle: visible ? undefined : { display: 'none' },
+    });
+  };
+
+  const handleWebViewMessage = (event) => {
+    const scrollY = Number(event.nativeEvent.data);
+    const now = Date.now();
+    const delta = scrollY - lastScrollY.current;
+
+    if (Math.abs(delta) < MIN_SCROLL_DELTA || now - lastToggleTime.current < SCROLL_DEBOUNCE_MS) {
+      return;
+    }
+
+    if (delta > 0) {
+      // Scrolling down
+      setShowUI(false);
+      toggleUI(false);
+    } else {
+      // Scrolling up
+      setShowUI(true);
+      toggleUI(true);
+    }
+
+    lastScrollY.current = scrollY;
+    lastToggleTime.current = now;
+  };
+
+  const handleTap = () => {
+    if (!showUI) toggleUI(true);
+  };
+
   console.log("before effect");
   useEffect(() => { 
     getPreDBConnection().then((db) => {
@@ -110,17 +145,25 @@ const ChapterContentScreen = ({ navigation, route }) => {
           // setLoading(true);
         }
       );
+        getMaxChapterId(db, 'contents').then((maxId) => {
+          // console.log('Max chapter ID:', maxId);
+          setMaxChapterId(maxId);
+        });
     });
-    // loadDataCallback();
-    // console.log('Chapters: ', chapters);
     setCurrentChapterId(chapterId);
+
+    //getting Max Chapter ID
+    getMaxChapterId().then((maxId) => {
+      console.log('Max chapter ID:', maxId);
+    });
+    //getting Max Chapter ID
+
     //update font size
     updateFontSizeInWebView(fontSize);
-    // if (currentChapterId) {
-    //   saveLastReadChapter(currentChapterId);
-    // }
+
     console.log('📦 FontSizeProvider rendered. Current fontSize:', fontSize);
-  }, [chapterId? chapterId : 1, fontSize]);
+
+  }, [chapterId? chapterId : 1, fontSize, navigation, translateY, maxChapterId]);
     console.log("after effect -----" + contents[chapterId]?.content);
     console.log(myObject)
     contents.forEach(item => {
@@ -135,6 +178,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
     increaseFont={increaseFont}
     decreaseFont={decreaseFont}
     showFontControls={true}
+    showAppLayout={showUI}
     >
     <SafeAreaView style={styles.container}>
     
@@ -151,6 +195,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
         </View>
       ) : 
       (
+      <TouchableWithoutFeedback onPress={handleTap}>
       <View style={{ flex: 1 }}>
       <WebView
         ref={webViewRef}
@@ -158,11 +203,14 @@ const ChapterContentScreen = ({ navigation, route }) => {
         // source={{ html: myObject[chapterId]?.content }}
         source={{ html: `<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body>${myObject[chapterId]?.content}</body></html>` }}
         style={{flex: 1 }}
-        // injectedJavaScript={injectedJavaScript}
+        injectedJavaScript={injectedJS}
         javaScriptEnabled={true}
         onLoadEnd={handleLoadEnd}
+        scrollEventThrottle={16}
+        onMessage={handleWebViewMessage}
       />
       </View>
+      </TouchableWithoutFeedback>
       )
       }
     </View>
@@ -191,7 +239,6 @@ const ChapterContentScreen = ({ navigation, route }) => {
     </SafeAreaView>
     </AppLayout>
     // </FontSizeProvider>
-    
   );
 };
 

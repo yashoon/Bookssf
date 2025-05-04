@@ -2,14 +2,17 @@
 import React from 'react';
 import { View, Text, TouchableOpacity,StatusBar, Platform, StyleSheet } from 'react-native';
 
-export default function AppLayout({ children, fontSize, increaseFont, decreaseFont, showFontControls=false }) {
+export default function AppLayout({ children, fontSize, increaseFont, decreaseFont, showFontControls=false,showAppLayout=true }) {
     const topPadding = Platform.OS === 'android' ? StatusBar.currentHeight : 50; // 44 is safe for iPhone notch
 
   return (
     <View style={{ flex: 1 }}>
+        {showAppLayout && (
         <StatusBar barStyle="light-content" backgroundColor="rgb(4, 118, 40)" />
+        )}
 
       {/* Header */}
+      {showAppLayout && (
       <View style={{
         backgroundColor: 'rgb(4, 118, 40)',
         padding: 10,
@@ -31,6 +34,7 @@ export default function AppLayout({ children, fontSize, increaseFont, decreaseFo
         </View>
         )}
       </View>
+      )}
 
       {/* Main content */}
       <View style={{ flex: 1 }}>
