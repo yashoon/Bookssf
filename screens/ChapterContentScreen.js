@@ -11,8 +11,6 @@ import AppLayout from '../components/AppLayout';
 import { WebView } from 'react-native-webview';
 import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
 
-const MIN_DELTA = 10; // Minimum scroll distance
-
 const ChapterContentScreen = ({ navigation, route }) => {
 
   const { chapterId } = route.params;
@@ -34,6 +32,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
   const MIN_SCROLL_DELTA = 15;
   const translateY = useRef(new Animated.Value(0)).current; // 0 = visible, 100 = hidden
 
+
   
   const updateFontSizeInWebView = (fontSize) => {
     const jsCode = `
@@ -52,7 +51,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
     true; // Required to indicate successful injection
   `;
 
-  // this is for hiding and showing the header
+  // this is for sending the scroll position to the app
   const injectedJS = `
   window.addEventListener('scroll', () => {
     window.ReactNativeWebView.postMessage(window.scrollY.toString());
@@ -92,7 +91,12 @@ const ChapterContentScreen = ({ navigation, route }) => {
   };
 
   const toggleUI = (visible) => {
-    setShowUI(visible);
+    Animated.timing(translateY, {
+      toValue: visible ? 0 : 100, // Push down to hide
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+    // setShowUI(visible);
     navigation.setOptions({
       headerShown: false,
       tabBarStyle: visible ? undefined : { display: 'none' },
@@ -110,11 +114,11 @@ const ChapterContentScreen = ({ navigation, route }) => {
 
     if (delta > 0) {
       // Scrolling down
-      setShowUI(false);
+      // setShowUI(false);
       toggleUI(false);
     } else {
       // Scrolling up
-      setShowUI(true);
+      // setShowUI(true);
       toggleUI(true);
     }
 
@@ -195,7 +199,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
         </View>
       ) : 
       (
-      <TouchableWithoutFeedback onPress={handleTap}>
+      // <TouchableWithoutFeedback onPress={handleTap}>
       <View style={{ flex: 1 }}>
       <WebView
         ref={webViewRef}
@@ -210,7 +214,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
         onMessage={handleWebViewMessage}
       />
       </View>
-      </TouchableWithoutFeedback>
+      // </TouchableWithoutFeedback>
       )
       }
     </View>
