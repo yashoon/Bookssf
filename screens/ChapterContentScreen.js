@@ -10,15 +10,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
 import { WebView } from 'react-native-webview';
 import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 const ChapterContentScreen = ({ navigation, route }) => {
 
-  const { chapterId } = route.params;
+  const { chapterId, toggleTabBar } = route.params;
   const { width } = useWindowDimensions();
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentChapterId, setCurrentChapterId] = useState(chapterId);
-  // const maxChapterId = 0; // replace with the actual max chapter ID
   const [maxChapterId, setMaxChapterId] = useState(0);
   const { fontSize, increaseFont, decreaseFont } = useFontSize();
   const webViewRef = useRef(null); // create a ref for the WebView
@@ -30,7 +30,10 @@ const ChapterContentScreen = ({ navigation, route }) => {
   const lastToggleTime = useRef(Date.now());
   const SCROLL_DEBOUNCE_MS = 300;
   const MIN_SCROLL_DELTA = 15;
-  const translateY = useRef(new Animated.Value(0)).current; // 0 = visible, 100 = hidden
+  // const translateY = useRef(new Animated.Value(0)).current; // 0 = visible, 100 = hidden
+  const tabBarHeight = useBottomTabBarHeight();
+  // const translateY = tabBarTranslateY;
+  // const { tabBarTranslateY } = props;
 
 
   
@@ -90,16 +93,30 @@ const ChapterContentScreen = ({ navigation, route }) => {
     return null;
   };
 
+  // const toggleUI = (visible) => {
+  //   console.log("this is toggling UI" + visible, translateY)
+  //   Animated.timing(translateY, {
+  //     toValue: visible ? 0 : 100, // Push down to hide
+  //     duration: 500,
+  //     useNativeDriver: true,
+  //   }).start();
+  //   setShowUI(visible);
+  //   navigation.setOptions({
+  //     headerShown: false,
+  //     tabBarStyle: visible ? undefined : { display: 'none' }, // optional: force hide if needed
+  //   });
+  // };
   const toggleUI = (visible) => {
-    Animated.timing(translateY, {
-      toValue: visible ? 0 : 100, // Push down to hide
-      duration: 250,
-      useNativeDriver: true,
-    }).start();
-    // setShowUI(visible);
+    console.log("this is toggling UI: " + visible);
+    // Call the function passed from the tab navigator
+    if (toggleTabBar) {
+      toggleTabBar(visible);
+    }
+    setShowUI(visible);
     navigation.setOptions({
-      headerShown: false,
-      tabBarStyle: visible ? undefined : { display: 'none' },
+      headerShown: false
+      // Remove tabBarStyle because it doesn't work this way with bottom tabs
+      // tabBarStyle: visible ? undefined : { display: 'none' },
     });
   };
 
@@ -165,9 +182,9 @@ const ChapterContentScreen = ({ navigation, route }) => {
     //update font size
     updateFontSizeInWebView(fontSize);
 
-    console.log('📦 FontSizeProvider rendered. Current fontSize:', fontSize);
+    console.log('tab bar height:', tabBarHeight);
 
-  }, [chapterId? chapterId : 1, fontSize, navigation, translateY, maxChapterId]);
+  }, [chapterId? chapterId : 1, fontSize, navigation, maxChapterId]);
     console.log("after effect -----" + contents[chapterId]?.content);
     console.log(myObject)
     contents.forEach(item => {
@@ -184,7 +201,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
     showFontControls={true}
     showAppLayout={showUI}
     >
-    <SafeAreaView style={styles.container}>
+    {/* <SafeAreaView style={styles.container}> */}
     
   <View style={{ flex: 1 }}>
     <View style={styles.container}>
@@ -217,13 +234,14 @@ const ChapterContentScreen = ({ navigation, route }) => {
       // </TouchableWithoutFeedback>
       )
       }
+      
     </View>
     {/* </ScrollView> */}
     </View>
 
     {/* adding buttons for chapter navigation */}
 
-<View style={styles.navContainer}>
+<View style={styles.navContainer} contentContainerStyle={{ paddingBottom: tabBarHeight }}>
   <TouchableOpacity
     onPress={() => goToChapter(currentChapterId - 1)}
     disabled={currentChapterId <= 1}
@@ -240,7 +258,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
   </TouchableOpacity>
 </View>
 
-    </SafeAreaView>
+    {/* </SafeAreaView> */}
     </AppLayout>
     // </FontSizeProvider>
   );

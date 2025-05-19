@@ -7,9 +7,9 @@ export default function AppLayout({ children, fontSize, increaseFont, decreaseFo
 
   return (
     <View style={{ flex: 1 }}>
-        {showAppLayout && (
-        <StatusBar barStyle="light-content" backgroundColor="rgb(4, 118, 40)" />
-        )}
+        {/* {showAppLayout && ( */}
+        <StatusBar barStyle="light-content" backgroundColor="rgb(4, 118, 40)" hidden={!showAppLayout}/>
+        {/* )} */}
 
       {/* Header */}
       {showAppLayout && (
