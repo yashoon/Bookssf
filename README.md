@@ -105,7 +105,12 @@ To learn more about React Native, take a look at the following resources:
 - brew install node --->
 - brew install watchman --> this is watching file changes in react native
 - brew install cocoapods --> for dependancy management for IOS/Swift Code
+- git clone <using the desired branch URL ex: git clone git@github.com:yashoon/Bookssf.git
 - cd <project folder> ex: Bookssf
 - npm install --> installs all node dependencies
 - cd ios
-- pod install --> install all IOS and Swift code dependancies. 
+- pod install --> install all IOS and Swift code dependancies.
+- install zulu kdk from macOS --> android documentation of react-native
+- set JAVA_HOME
+- set ANDROID_HOME
+- 
