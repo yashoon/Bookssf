@@ -104,4 +104,8 @@ To learn more about React Native, take a look at the following resources:
 - install Homebrew from react native documentation --> https://brew.sh/
 - brew install node --->
 - brew install watchman --> this is watching file changes in react native
-- brew install cocoapods --> for dependancy management for IOS/Swift Code 
+- brew install cocoapods --> for dependancy management for IOS/Swift Code
+- cd <project folder> ex: Bookssf
+- npm install --> installs all node dependencies
+- cd ios
+- pod install --> install all IOS and Swift code dependancies. 
