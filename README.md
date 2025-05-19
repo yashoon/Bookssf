@@ -96,6 +96,12 @@ To learn more about React Native, take a look at the following resources:
 - [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
 - [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
 
-- Download Nodejs version v23.6.1 Link : https://nodejs.org/download/release/v23.6.1
+
+
 - Download Android Studio https://developer.android.com/studio
 - Download Xcode for Mac : AppStore
+- set the xcode build --> xcode --> settings --> components --> select the xcode build
+- install Homebrew from react native documentation --> https://brew.sh/
+- brew install node --->
+- brew install watchman --> this is watching file changes in react native
+- brew install cocoapods --> for dependancy management for IOS/Swift Code 
