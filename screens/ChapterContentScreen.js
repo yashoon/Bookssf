@@ -1,5 +1,5 @@
-import React, {useState, useEffect, useRef} from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Animated, ActivityIndicator, Button, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
+import React, {useState, useEffect, useRef, useMemo} from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native-gesture-handler';
 import { getPreDBConnection, getUsers, getMaxChapterId } from '../database/Database';
@@ -12,9 +12,9 @@ import { WebView } from 'react-native-webview';
 import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
-const ChapterContentScreen = ({ navigation, route }) => {
+const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslateY }) => {
 
-  const { chapterId, toggleTabBar } = route.params;
+  const { chapterId } = route.params;
   const { width } = useWindowDimensions();
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +22,6 @@ const ChapterContentScreen = ({ navigation, route }) => {
   const [maxChapterId, setMaxChapterId] = useState(0);
   const { fontSize, increaseFont, decreaseFont } = useFontSize();
   const webViewRef = useRef(null); // create a ref for the WebView
-  const myObject = {};
   const [showUI, setShowUI] = useState(true);
   const scrollOffset = useRef(0);
   // const navigation = useNavigation();
@@ -155,10 +154,8 @@ const ChapterContentScreen = ({ navigation, route }) => {
             setContents(users);
             // Convert array to object
             users.forEach(item => {
-              // myObject[item.chapter_id] = item;
-              myObject[item.id] = item;
+              contentMap[item.id] = item;
             });
-            console.log("This is myObject::::::: " + myObject)
             console.log("This is Content List::::::: " + users)
             setLoading(false);
         }, (error) => {
@@ -171,7 +168,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
           setMaxChapterId(maxId);
         });
     });
-    setCurrentChapterId(chapterId);
+    
 
     //getting Max Chapter ID
     getMaxChapterId().then((maxId) => {
@@ -183,14 +180,44 @@ const ChapterContentScreen = ({ navigation, route }) => {
     updateFontSizeInWebView(fontSize);
 
     console.log('tab bar height:', tabBarHeight);
+    setCurrentChapterId(chapterId);
 
-  }, [chapterId? chapterId : 1, fontSize, navigation, maxChapterId]);
+  // }, [chapterId? chapterId : 1, fontSize, navigation, maxChapterId]);
+  }, [fontSize, maxChapterId]);
     console.log("after effect -----" + contents[chapterId]?.content);
-    console.log(myObject)
-    contents.forEach(item => {
-      // myObject[item.chapter_id] = item;
-      myObject[item.id] = item;
-    });
+
+  // Sync chapterId from route
+useEffect(() => {
+  console.log("this is chapterId from route" + route.params.chapterId)
+  setCurrentChapterId(route.params.chapterId);
+  try {
+    console.log("saving in async from next and previous buttons " + chapterId);
+     saveLastReadChapter(chapterId);
+  } catch (e) {
+    console.log('Error during save:', e);
+    // Optionally show a toast or fallback
+  }
+}, [route.params.chapterId]);
+
+// for animating the nav buttons
+// const buttonBottom = tabBarTranslateY.interpolate({
+//   inputRange: [0, 100],  // tab visible (0) -> hidden (100)
+//   outputRange: [tabBarHeight + 10, 30],
+//   extrapolate: 'clamp',
+// });
+// const navOpacity = tabBarTranslateY.interpolate({
+//   inputRange: [0, 100],
+//   outputRange: [1, 0], // fully visible → fully transparent
+//   extrapolate: 'clamp',
+// });
+
+  const contentMap = useMemo(() => {
+      const obj = {};
+      contents.forEach(item => {
+        obj[item.id] = item;
+      });
+      return obj;
+    }, [contents]);
 
   return (
     // <FontSizeProvider>
@@ -206,7 +233,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
   <View style={{ flex: 1 }}>
     <View style={styles.container}>
       {
-      loading || (typeof myObject[chapterId]?.content === "undefined") ? (
+      loading || (typeof contentMap[chapterId]?.content === "undefined") ? (
         
         <View style={{ alignItems: 'center' }}>
           <ActivityIndicator size="large" color="blue" />
@@ -221,9 +248,8 @@ const ChapterContentScreen = ({ navigation, route }) => {
       <WebView
         ref={webViewRef}
         originWhitelist={['*']}
-        // source={{ html: myObject[chapterId]?.content }}
-        source={{ html: `<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body>${myObject[chapterId]?.content}</body></html>` }}
-        style={{flex: 1 }}
+        source={{ html: `<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body>${contentMap[chapterId]?.content}<div style="height:50;"></div></body></html>` }}
+        style={{flex: 1,paddingBottom: 50}}
         injectedJavaScript={injectedJS}
         javaScriptEnabled={true}
         onLoadEnd={handleLoadEnd}
@@ -241,7 +267,25 @@ const ChapterContentScreen = ({ navigation, route }) => {
 
     {/* adding buttons for chapter navigation */}
 
-<View style={styles.navContainer} contentContainerStyle={{ paddingBottom: tabBarHeight }}>
+{/* <View style={styles.navContainer} contentContainerStyle={{ paddingBottom: tabBarHeight }}> */}
+
+{/* <View style={[styles.navContainer, { bottom: showUI ? tabBarHeight + 10 : 30 }]}> */}
+<Animated.View
+  style={[
+    styles.navContainer,
+    {
+      transform: [{
+        translateY: tabBarTranslateY.interpolate({
+          inputRange: [0, 100],
+          outputRange: [0, tabBarHeight], // move down when tab hides
+          extrapolate: 'clamp',
+        }),
+      }],
+      // opacity: navOpacity, // 🔥 Fade in/out
+      bottom: tabBarHeight + 20, // ✅ dynamic bottom padding
+    },
+  ]}
+>
   <TouchableOpacity
     onPress={() => goToChapter(currentChapterId - 1)}
     disabled={currentChapterId <= 1}
@@ -256,7 +300,7 @@ const ChapterContentScreen = ({ navigation, route }) => {
     {/* <Text style={styles.navText}>Next →</Text> */}
     <Text style={styles.arrowText}>›</Text>
   </TouchableOpacity>
-</View>
+</Animated.View>
 
     {/* </SafeAreaView> */}
     </AppLayout>
@@ -316,7 +360,14 @@ const styles = StyleSheet.create({
     // justifyContent: 'space-between',
     // marginTop: 20,
     // paddingHorizontal: 40,
-    position: 'absolute', bottom: 20, left: 20, right: 20, flexDirection: 'row', justifyContent: 'space-between'
+    position: 'absolute', 
+    // bottom: 100, 
+    left: 20, 
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    zIndex: 50, // <- higher than tab bar (which you had at zIndex: 10)
+    elevation: 10, // <- for Android
   },
   circleButton: {
     width: 50,

@@ -50,7 +50,7 @@ const TabNavigator = () => {
     console.log("TabNavigator toggling tab bar: " + visible);
     Animated.timing(tabBarTranslateY, {
       toValue: visible ? 0 : 100,
-      duration: 250,
+      duration: 350,
       useNativeDriver: true,
     }).start();
   };
@@ -59,7 +59,8 @@ const TabNavigator = () => {
       try {
         console.log("this is Aysnc loading chapterId")
         const storedChapterId = await AsyncStorage.getItem('lastReadChapter');
-        console.log("Async store chapterId" + storedChapterId)
+        setLastReadChapter(storedChapterId ? parseInt(storedChapterId) : 1);
+
         setLastReadChapter(storedChapterId);
         // if (storedChapterId) {
         //   navigation.navigate('ContentScreen', { chapterId: parseInt(storedChapterId) });
@@ -101,14 +102,27 @@ const TabNavigator = () => {
     ),
   }}/>
       <Tab.Screen name="ChapterList" component={ChapterListScreen} />
-      <Tab.Screen name="ChapterContent" 
+      <Tab.Screen
+        name="ChapterContent"
+        // options={{ tabBarButton: () => null }} // optional: hide tab icon if needed 
+      >
+    {(props) => (
+    <ChapterContentScreen
+      {...props}
+      toggleTabBar={toggleTabBar}
+      tabBarTranslateY={tabBarTranslateY}
+    />
+  )}
+</Tab.Screen>
+
+      {/* <Tab.Screen name="ChapterContent" 
       component={ChapterContentScreen} 
       // initialParams={{ chapterId: lastReadChapter ?? 1}}
       initialParams={{
         chapterId: lastReadChapter ?? 1,
         toggleTabBar, // pass the animation value to the screen
       }}
-      />
+      /> */}
     </Tab.Navigator>
     // </FontSizeProvider>
   );

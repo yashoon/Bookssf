@@ -86,22 +86,6 @@ try {
 }
 };
 
-// export const getUsersnew = async (db) => {
-//   // insert into table
-//   const query = 'SELECT * FROM users;';
-// console.log('fetching users ...' + query);
-// try {
-//   await db.executeSql(query, [], (_, results) => 
-//     {let users = [];
-//       for (let i = 0; i < results.rows.length; i++) {
-//         users.push(results.rows.item(i));
-//       }
-//       console.log('✅ Users fetched:', users);
-// });
-// } catch (error) {
-//   console.error('❌ Error creating table:', error);
-// }
-// };
 
 export const getUsers = async (db, table) => {
 
@@ -146,22 +130,3 @@ export const getMaxChapterId = async (db, table) => {
   });
 });
 };
-
-// export const createTable = async (db) => {
-//   db.transaction(tx => {
-//     tx.executeSql(
-//       `CREATE TABLE IF NOT EXISTS users (
-//         id INTEGER PRIMARY KEY AUTOINCREMENT, 
-//         name TEXT, 
-//         age INTEGER
-//       );`,
-//       [],
-//       () => console.log('✅ Table created'),
-//       error => console.error('❌ Error creating table:', error)
-//     );
-//   });
-// };
-
-// createTable();
-
-// export default db;
