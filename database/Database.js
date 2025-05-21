@@ -86,22 +86,6 @@ try {
 }
 };
 
-// export const getUsersnew = async (db) => {
-//   // insert into table
-//   const query = 'SELECT * FROM users;';
-// console.log('fetching users ...' + query);
-// try {
-//   await db.executeSql(query, [], (_, results) => 
-//     {let users = [];
-//       for (let i = 0; i < results.rows.length; i++) {
-//         users.push(results.rows.item(i));
-//       }
-//       console.log('✅ Users fetched:', users);
-// });
-// } catch (error) {
-//   console.error('❌ Error creating table:', error);
-// }
-// };
 
 export const getUsers = async (db, table) => {
 
@@ -126,44 +110,23 @@ export const getUsers = async (db, table) => {
   });
 });
 };
-// export const getUsers1 = async (db, table) => {
 
-//   console.log('Fetching users ...');
-//   return new Promise(resolve => {
-//     db.transaction(tx => {
-//       tx.executeSql(
-//         "SELECT sql FROM sqlite_master WHERE type='table'",
-//         [],
-//         (_, results) => {
-//           if (results.rows.length > 0) {
-//             console.log('Table Schemas:', results.rows.raw());
-//           } else {
-//             console.log('No table schemas found');
-//           }
-//         },
-//         error => {
-//           console.error('Error fetching schemas:', error);
-//         }
-//       );
-//     });
-// });
-// };
+export const getMaxChapterId = async (db, table) => {
 
-// export const createTable = async (db) => {
-//   db.transaction(tx => {
-//     tx.executeSql(
-//       `CREATE TABLE IF NOT EXISTS users (
-//         id INTEGER PRIMARY KEY AUTOINCREMENT, 
-//         name TEXT, 
-//         age INTEGER
-//       );`,
-//       [],
-//       () => console.log('✅ Table created'),
-//       error => console.error('❌ Error creating table:', error)
-//     );
-//   });
-// };
-
-// createTable();
-
-// export default db;
+  // console.log('Fetching Max Chapter ID ...');
+  return new Promise(resolve => {
+  db.transaction(tx => {
+    tx.executeSql(
+      'SELECT max(id) as maxChapterID FROM ' + table + ';',
+      [],
+      (_, results) => {
+        // console.log('Results:', results);
+        const row = results.rows.item(0);
+        // console.log('✅ Max ID fetched:', row.maxChapterID);
+        resolve(row.maxChapterID);
+      },
+      error => console.error('Error fetching maxChapterID:', error)
+    );
+  });
+});
+};

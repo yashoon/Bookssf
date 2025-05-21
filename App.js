@@ -46,7 +46,7 @@ export default function App() {
         // const user = await getUsers(db);
         // setUsers(user);
         // console.log("above is for getting users")
-        // console.log(users)
+        // console. log(users)
     } catch (error) {
        console.error(error);
     }
