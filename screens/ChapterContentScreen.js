@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated }
 import { useTranslation } from 'react-i18next';
 import { ScrollView } from 'react-native-gesture-handler';
 import { getPreDBConnection, getUsers, getMaxChapterId } from '../database/Database';
-// import { NavigationContainer } from 'react-navigation/native';
 import RenderHTML from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
