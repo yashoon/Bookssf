@@ -97,7 +97,7 @@ To learn more about React Native, take a look at the following resources:
 - [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
 
 
-
+ 
 - Download Android Studio https://developer.android.com/studio
 - Download Xcode for Mac : AppStore
 - set the xcode build --> xcode --> settings --> components --> select the xcode build
