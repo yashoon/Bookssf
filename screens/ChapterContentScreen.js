@@ -1,7 +1,6 @@
 import React, {useState, useEffect, useRef, useMemo} from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { ScrollView } from 'react-native-gesture-handler';
 import { getPreDBConnection, getUsers, getMaxChapterId } from '../database/Database';
 import RenderHTML from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
@@ -23,15 +22,11 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
   const webViewRef = useRef(null); // create a ref for the WebView
   const [showUI, setShowUI] = useState(true);
   const scrollOffset = useRef(0);
-  // const navigation = useNavigation();
   const lastScrollY = useRef(0);
   const lastToggleTime = useRef(Date.now());
   const SCROLL_DEBOUNCE_MS = 300;
   const MIN_SCROLL_DELTA = 15;
-  // const translateY = useRef(new Animated.Value(0)).current; // 0 = visible, 100 = hidden
   const tabBarHeight = useBottomTabBarHeight();
-  // const translateY = tabBarTranslateY;
-  // const { tabBarTranslateY } = props;
 
 
   
@@ -91,19 +86,6 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
     return null;
   };
 
-  // const toggleUI = (visible) => {
-  //   console.log("this is toggling UI" + visible, translateY)
-  //   Animated.timing(translateY, {
-  //     toValue: visible ? 0 : 100, // Push down to hide
-  //     duration: 500,
-  //     useNativeDriver: true,
-  //   }).start();
-  //   setShowUI(visible);
-  //   navigation.setOptions({
-  //     headerShown: false,
-  //     tabBarStyle: visible ? undefined : { display: 'none' }, // optional: force hide if needed
-  //   });
-  // };
   const toggleUI = (visible) => {
     console.log("this is toggling UI: " + visible);
     // Call the function passed from the tab navigator

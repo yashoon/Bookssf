@@ -5,6 +5,7 @@ import ChapterListScreen from '../screens/ChapterListScreen';
 import ChapterContentScreen from '../screens/ChapterContentScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SectionMenuScreen from '../screens/SectionMenuScreen';
+import SearchScreen from '../screens/SearchScreen';
 
 //adding animation
 import { BottomTabBar } from '@react-navigation/bottom-tabs';
@@ -102,6 +103,17 @@ const TabNavigator = () => {
     ),
   }}/>
       <Tab.Screen name="ChapterList" component={ChapterListScreen} />
+
+      <Tab.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="search-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
       <Tab.Screen
         name="ChapterContent"
         // options={{ tabBarButton: () => null }} // optional: hide tab icon if needed 
