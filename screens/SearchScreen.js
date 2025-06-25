@@ -39,6 +39,18 @@ const SearchScreen = () => {
     }
   }, [query]);
 
+  const getSnippet = (html, keyword) => {
+    const text = html.replace(/<[^>]+>/g, ''); // strip HTML
+    const index = text.toLowerCase().indexOf(keyword.toLowerCase());
+
+    if (index === -1) return text.slice(0, 100) + '...';
+
+    const start = Math.max(0, index - 40);
+    const end = Math.min(text.length, index + 60);
+
+    return text.slice(start, end) + '...';
+  };
+
   return (
     <AppLayout>
         {/* <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1 }}></SafeAreaView> */}
@@ -57,10 +69,12 @@ const SearchScreen = () => {
                     style={styles.item}
                     onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id })}
                 >
-                    <Text 
+                    {/* <Text 
                     // style={styles.title}
                     style={{ fontSize: 18, color: 'gray' }}
-                    >{item.content}</Text>
+                    >{item.content}</Text> */}
+                    <Text style={styles.chapterTitle}>Chapter {item.id}</Text>
+                    <Text style={styles.snippet}>{getSnippet(item.content, query)}</Text>
                 </TouchableOpacity>
                 )}
                 ListEmptyComponent={() => (
@@ -94,6 +108,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     color: 'gray',
+  },
+  chapterTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'rgb(34, 143, 68)',
+    marginBottom: 6,
   },
 });
 
