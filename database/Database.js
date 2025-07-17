@@ -1,4 +1,5 @@
 import SQLite from 'react-native-sqlite-storage';
+import { ensureDatabaseExists } from './firebaseDBManager';
 
 // Enable debugging
 SQLite.enablePromise(true);
@@ -12,28 +13,26 @@ export const getDBConnection = async () => {
   );
 };
 
-// Fetch Nested TOC from Database
-// export const fetchTOC = (callback) => {
-//   data_db.transaction((tx) => {
-//     tx.executeSql(
-//       "SELECT * FROM CHAPTERS",
-//       [],
-//       (_, results) => {
-//         let rows = results.rows.raw();
 
-//         // Convert flat list into nested structure
-//         const buildHierarchy = (parentId = null) => {
-//           return rows
-//             .filter((item) => item.parent_chapter === parentId)
-//             .map((item) => ({ ...item, subchapters: buildHierarchy(item.chapter_number) }));
-//         };
+// getting database form firebase
 
-//         callback(buildHierarchy());
-//       },
-//       (error) => console.error("Error fetching data", error)
-//     );
-//   });
-// };
+export const getDBConnection_local = async (language = 'english') => {
+  const dbPath = await ensureDatabaseExists(language);
+
+  return SQLite.openDatabase(
+    {
+      name: `${language}.db`,
+      location: 'default',
+      createFromLocation: dbPath, // optional for Android, ignored on iOS
+    },
+    () => console.log('✅ Opened database for', language),
+    error => console.error('❌ DB Open error:', error)
+  );
+};
+
+
+// getting database form firebase
+//
 
 export const getPreDBConnection = async () => {
   console.log('Opening database ...');
@@ -46,6 +45,7 @@ export const getPreDBConnection = async () => {
   //location: 'Shared' is the key to open the pre-populated database in the Shared directory
   //location: 'Data' is the key to open the pre-populated database in the Data directory
   //location: 'Library' is the key to open the pre-populated database in the Library directory
+  //https://shepherd-s-staff.web.app/databases/SSF.db
   return SQLite.openDatabase({ name: "SSF", location: "Library" , createFromLocation: "~SSF.db",},
     () => console.log('✅ Preloaded Database opened successfully ...'),
     error => console.error('❌ Preloaded Error opening database:', error)
