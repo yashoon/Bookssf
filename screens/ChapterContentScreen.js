@@ -337,10 +337,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   navContainer: {
-    // flexDirection: 'row',
-    // justifyContent: 'space-between',
-    // marginTop: 20,
-    // paddingHorizontal: 40,
     position: 'absolute', 
     // bottom: 100, 
     left: 20, 

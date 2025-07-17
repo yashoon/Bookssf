@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDBConnection, getUsers, getUsers1, getPreDBConnection } from '../database/Database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const chapters = [
   { id: '1', title: 'The Bible' },
@@ -40,7 +41,7 @@ const ChapterListScreen = ({ navigation, route }) => {
         const stored = await AsyncStorage.getItem('lastReadChapter');
         if (stored) {
           setLastReadChapter(parseInt(stored, 10));
-          setShowModal(true);
+          setShowModal(false); // setting false temporarily to avoid showing modal on initial load
         }
       } catch (e) {
         console.log('Error loading last chapter:', e);
@@ -73,7 +74,15 @@ console.log("this is rendering page")
     <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1 }}>
     <View>
       {/* <Text style={styles.title}>Table of Contents</Text> */}
-     { <FlatList
+     
+     {
+      (filterChaptersBySection(section).length === 0) ?
+      <View >
+        <Text style={styles.title}>No Chapters Available for Section {section}</Text>
+      </View>
+      : (
+      
+      <FlatList
         // data={chapters}
         data={filterChaptersBySection(section)}
         keyExtractor={(item) => item.id}
@@ -89,7 +98,9 @@ console.log("this is rendering page")
             (item.default_title).trim()}</Text>
           </TouchableOpacity>
         )}
-      /> }
+      /> 
+      )
+      }
 
     <Modal
         visible={showModal}
