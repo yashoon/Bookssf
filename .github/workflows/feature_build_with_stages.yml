@@ -41,6 +41,7 @@ jobs:
             npm-${{ runner.os }}-
 
   install_Deps:
+    needs: build
     runs-on: ubuntu-latest
     
     steps:
@@ -56,12 +57,14 @@ jobs:
           echo "MYAPP_RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> android/gradle.properties
 
   build_apk:
+    needs: install_Deps
     runs-on: ubuntu-latest
     steps:
       - name: 🏗️ Build Release APK
         run: cd android && ./gradlew assembleRelease
 
   upload_apk:
+    needs: build_apk
     runs-on: ubuntu-latest
     
     steps:
