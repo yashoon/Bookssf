@@ -1,7 +1,7 @@
 // screens/SearchScreen.js
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { getPreDBConnection, getUsers } from '../database/Database';
+import { getDBConnection_local, getPreDBConnection, getUsers } from '../database/Database';
 import { useNavigation } from '@react-navigation/native';
 import AppLayout from '../components/AppLayout';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,7 +13,8 @@ const SearchScreen = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    getPreDBConnection().then((db) => {
+    // getPreDBConnection().then((db) => {
+    getDBConnection_local().then((db) => {
       getUsers(db, 'contents').then((chapters) => {
         setAllChapters(chapters);
         setFilteredChapters(chapters);

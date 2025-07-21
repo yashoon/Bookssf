@@ -11,19 +11,43 @@ export const ensureDatabaseExists = async (language) => {
   const versionKey = `db_version_${language}`;
 
   try {
+
     const response = await fetch(versionUrl);
+
+    if (!response.ok) {
+        const errorText = await response.text(); // try to read error message
+        throw new Error(`Failed to fetch version file: ${response.status} - ${errorText}`);
+      }
+      
+
     const remoteVersions = await response.json();
-    const remoteVersion = remoteVersions[language]?.toString();
+    const remoteVersion = remoteVersions['english']?.toString(); // Assuming 'english' is the key for the default language
+    // const remoteVersion = remoteVersions['language']?.toString();
+
+    console.log(`Remote version for ${language}:`, remoteVersion);
 
     const localVersion = await AsyncStorage.getItem(versionKey);
     const dbExists = await RNFS.exists(localPath);
 
     if (!dbExists || localVersion !== remoteVersion) {
       console.log(`⬇️ Downloading ${dbFileName}...`);
+      console.log(`Database URL: ${dbUrl}`);
+      console.log(`Local path: ${localPath}`);
+
       const result = await RNFS.downloadFile({
         fromUrl: dbUrl,
         toFile: localPath,
+        headers: {
+            'Accept': 'application/octet-stream',
+          },
       }).promise;
+
+      
+      // const fileInfo = await RNFS.stat(this.dbPath);
+      const fileInfo = await RNFS.stat(localPath);
+      console.log(`Database file size: ${fileInfo.size} bytes`);
+
+      console.log('Download result:', result);
 
       if (result.statusCode === 200) {
         await AsyncStorage.setItem(versionKey, remoteVersion);

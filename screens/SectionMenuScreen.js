@@ -1,11 +1,36 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import AppLayout from '../components/AppLayout';
+import { use } from 'i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SectionMenuScreen = ({ navigation }) => {
     const sections = ['1. New Believers Training Manual', 
         '2. Topical Concordance', 
         '3. Leaders Training Guide'];
+    const [lastReadChapter, setLastReadChapter] = useState(null);
+    
+
+
+useEffect(() => {
+    // You can add any initialization logic here if needed
+        //code for fetching last read and showing modal
+        const fetchLastRead = async () => {
+          try {
+            const stored = await AsyncStorage.getItem('lastReadChapter');
+            if (stored) {
+              setLastReadChapter(parseInt(stored, 10));
+              
+              // setShowModal(false); // setting false temporarily to avoid showing modal on initial load
+            }
+          } catch (e) {
+            console.log('Error loading last chapter:', e);
+          }
+        };
+    
+        fetchLastRead();
+        //code for fetching last read and showing modal
+    }, []);
   
     return (
         // <FontSizeProvider>

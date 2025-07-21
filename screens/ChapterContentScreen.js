@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useRef, useMemo} from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { getPreDBConnection, getUsers, getMaxChapterId } from '../database/Database';
+import { getPreDBConnection, getUsers, getMaxChapterId, getDBConnection_local } from '../database/Database';
 import RenderHTML from 'react-native-render-html';
 import { useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,6 +11,11 @@ import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslateY }) => {
+
+  console.log("This is chapter content screen: " + route.params.chapterId);
+  console.log("This is chapter content screen: " + navigation);
+  console.log("This is chapter content screen: " + toggleTabBar);
+  console.log("This is chapter content screen: " + tabBarTranslateY);
 
   const { chapterId } = route.params;
   const { width } = useWindowDimensions();
@@ -129,7 +134,8 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
 
   console.log("before effect");
   useEffect(() => { 
-    getPreDBConnection().then((db) => {
+    // getPreDBConnection().then((db) => {
+    getDBConnection_local().then((db) => {
         getUsers(db, 'contents').then((users) => {
             console.log("This is content List::::::: " + users)
             setContents(users);
@@ -165,6 +171,8 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
 
   // }, [chapterId? chapterId : 1, fontSize, navigation, maxChapterId]);
   }, [fontSize, maxChapterId]);
+
+  
     console.log("after effect -----" + contents[chapterId]?.content);
 
   // Sync chapterId from route

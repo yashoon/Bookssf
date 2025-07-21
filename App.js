@@ -8,7 +8,7 @@ import SQLite from 'react-native-sqlite-storage';
 import { useEffect, useState } from 'react';
 // import './i18n'; // Import i18n configuration
 import { insertChapters } from './database/Database';
-import { getDBConnection, createTable, getPreDBConnection } from './database/Database';
+import { getDBConnection, createTable, getPreDBConnection, getDBConnection_local } from './database/Database';
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 import 'react-native-gesture-handler';
 import { enableScreens } from 'react-native-screens';
@@ -53,22 +53,13 @@ export default function App() {
  };
 
   useEffect(() => {
-    console.log('Initializing database'); 
-    getPreDBConnection().then((db) => { 
-      console.log('Database initialized');
-    });
-    // initializeDatabase();
-    // initializeDatabase();
-    // insertChapters();
-  //   try{
-  //   //const db = await getDBConnection();
-  //   //console.log('its after getting the db connection');
-  //   createTable(db);
-  // } catch (error) {
-  //   console.log("got the error: " + error)
-  // }
-  // loadDataCallback();
-    
+    // console.log('Initializing database'); 
+    // getPreDBConnection().then((db) => { 
+    //   console.log('Database initializing...');
+    // });
+    // getDBConnection_local('ssf_english').then((db) => {
+    //   console.log('Local database initialized');
+    // });
   }, []);
 
   return (

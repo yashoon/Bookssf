@@ -31,6 +31,20 @@
 		<false/>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
+		<key>NSExceptionDomains</key>
+    	<dict>
+      		<key>shepherd-s-staff.web.app</key>
+      		<dict>
+        		<key>NSExceptionMinimumTLSVersion</key>
+        		<string>TLSv1.2</string>
+        		<key>NSIncludesSubdomains</key>
+        		<true/>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+      			<false/>
+				<key>NSRequiresCertificateTransparency</key>
+      			<false/>
+      		</dict>
+		</dict>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>

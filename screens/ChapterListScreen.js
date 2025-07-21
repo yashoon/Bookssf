@@ -2,7 +2,7 @@ import React, { useEffect, useState }  from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, Button } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getDBConnection, getUsers, getUsers1, getPreDBConnection } from '../database/Database';
+import { getDBConnection, getUsers, getUsers1, getPreDBConnection, getDBConnection_local } from '../database/Database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -26,14 +26,25 @@ const ChapterListScreen = ({ navigation, route }) => {
 
 
   useEffect(() => { 
-    getPreDBConnection().then((db) => {
-        getUsers(db, 'Chapters').then((users) => {
-            // console.log("This is chapter List::::::: " + users)
-            // console.log("chapter in Json: " + JSON.stringify(users))
-            setChapters(users);
-            // console.log("This is chapter List::::::: " + users)
-        });   
-    });
+    // getPreDBConnection().then((db) => {
+    //     getUsers(db, 'Chapters').then((users) => {
+    //         // console.log("This is chapter List::::::: " + users)
+    //         // console.log("chapter in Json: " + JSON.stringify(users))
+    //         setChapters(users);
+    //         // console.log("This is chapter List::::::: " + users)
+    //     });   
+    // });
+
+    // fetching from local database from firebase
+    getDBConnection_local('ssf_english').then((db) => {
+      getUsers(db, 'chapters').then((users) => {
+          // console.log("This is chapter List::::::: " + users)
+          // console.log("chapter in Json: " + JSON.stringify(users))
+          setChapters(users);
+          // console.log("This is chapter List::::::: " + users)
+      });   
+  });
+    // fetching from local database from firebase
 
     //code for fetching last read and showing modal
     const fetchLastRead = async () => {
