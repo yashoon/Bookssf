@@ -4,23 +4,37 @@ on:
   push:
     branches:
       - 'feature/**'
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🧱 Checkout
+      - name: 🧱 Checkout Code
         uses: actions/checkout@v4
-        
-      - name: ⚙️ Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: 17
 
-      - name: 📦 Restore Keystore
-        run: |
-          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > android/app/my-release-key.keystore
+      - name: 💾 Upload Source Code for Next Jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-code
+          path: .
+  
+  install_deps:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Download Source Code
+        uses: actions/download-artifact@v4
+        with:
+          name: source-code
+          path: .
+
+      - name: ⚙️ Set up Node and Install Dependencies
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm ci
 
       - name: 📦 Cache Gradle
         uses: actions/cache@v4
@@ -40,36 +54,73 @@ jobs:
           restore-keys: |
             npm-${{ runner.os }}-
 
-  install_Deps:
-    needs: build
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: 📥 Install deps
-        run: |
-          npm install
+      - name: 💾 Upload Node Modules and Gradle for Next Job
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-env
+          path: |
+            node_modules
+            android/gradle
+            android/gradlew
+            android/gradlew.bat
+            android/gradle.properties
+            android/app/build.gradle
+            android/build.gradle
+            android/settings.gradle
 
-      - name: 🔧 Configure Gradle properties
+  build_apk:
+    needs: install_deps
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Download Source Code
+        uses: actions/download-artifact@v4
+        with:
+          name: source-code
+          path: .
+
+      - name: 📥 Download Build Env
+        uses: actions/download-artifact@v4
+        with:
+          name: build-env
+          path: .
+
+      - name: ⚙️ Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: 🔐 Restore Keystore
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > android/app/my-release-key.keystore
+
+      - name: 🔧 Configure Gradle Properties
         run: |
           echo "MYAPP_RELEASE_STORE_FILE=my-release-key.keystore" >> android/gradle.properties
           echo "MYAPP_RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> android/gradle.properties
           echo "MYAPP_RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> android/gradle.properties
           echo "MYAPP_RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> android/gradle.properties
 
-  build_apk:
-    needs: install_Deps
-    runs-on: ubuntu-latest
-    steps:
       - name: 🏗️ Build Release APK
         run: cd android && ./gradlew assembleRelease
 
-  upload_apk:
-    needs: build_apk
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: 📤 Upload APK
+      - name: 💾 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
+
+  deploy:
+    needs: build_apk
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Download APK Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-apk
+          path: ./release
+
+      - name: ✅ Notify or Publish (Optional)
+        run: echo "Ready for deployment or Play Store upload"
