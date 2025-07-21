@@ -6,6 +6,7 @@ import ChapterContentScreen from '../screens/ChapterContentScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SectionMenuScreen from '../screens/SectionMenuScreen';
 import SearchScreen from '../screens/SearchScreen';
+import LanguageSelectorScreen from '../screens/LanguageSelectorScreen';
 
 //adding animation
 import { BottomTabBar } from '@react-navigation/bottom-tabs';
@@ -80,7 +81,7 @@ const TabNavigator = () => {
 
   return (
     // <FontSizeProvider>
-    <Tab.Navigator
+<Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: 'rgb(4, 118, 40)', // active tab color (purple-ish)
@@ -94,17 +95,18 @@ const TabNavigator = () => {
       tabBar={(props) => (
         <AnimatedTabBar {...props} tabBarTranslateY={tabBarTranslateY} />
       )}
-    >
-      <Tab.Screen name="Sections" component={SectionMenuScreen}  
+>
+  <Tab.Screen name="Sections" component={SectionMenuScreen}  
       options={{
     tabBarIcon: ({ color, size }) => (
       <Icon name="menu-outline" color={color} size={size} />
       // <Icon name="menu-outline" size={24} color="#000" />
     ),
-  }}/>
-      <Tab.Screen name="ChapterList" component={ChapterListScreen} />
+    }}
+  />
+  <Tab.Screen name="ChapterList" component={ChapterListScreen} />
 
-      <Tab.Screen
+  <Tab.Screen
         name="Search"
         component={SearchScreen}
         options={{
@@ -112,9 +114,9 @@ const TabNavigator = () => {
             <Icon name="search-outline" size={size} color={color} />
           ),
         }}
-      />
+  />
 
-      <Tab.Screen
+  <Tab.Screen
         name="ChapterContent"
         // options={{ tabBarButton: () => null }} // optional: hide tab icon if needed 
       >
@@ -125,7 +127,14 @@ const TabNavigator = () => {
       tabBarTranslateY={tabBarTranslateY}
     />
   )}
-</Tab.Screen>
+  </Tab.Screen>
+  <Tab.Screen name="Language" component={LanguageSelectorScreen} 
+      options={{
+        tabBarIcon: ({ color, size }) => (
+          <Icon name="language-outline" color={color} size={size} />
+          // <Icon name="menu-outline" size={24} color="#000" />
+        ),
+  }}/>
 
       {/* <Tab.Screen name="ChapterContent" 
       component={ChapterContentScreen} 
@@ -135,7 +144,7 @@ const TabNavigator = () => {
         toggleTabBar, // pass the animation value to the screen
       }}
       /> */}
-    </Tab.Navigator>
+</Tab.Navigator>
     // </FontSizeProvider>
   );
 };
