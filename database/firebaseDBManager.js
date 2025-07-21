@@ -1,3 +1,4 @@
+import NetInfo from '@react-native-community/netinfo';
 import RNFS from 'react-native-fs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -12,24 +13,37 @@ export const ensureDatabaseExists = async (language) => {
 
   try {
 
-    const response = await fetch(versionUrl);
 
-    if (!response.ok) {
-        const errorText = await response.text(); // try to read error message
-        throw new Error(`Failed to fetch version file: ${response.status} - ${errorText}`);
-      }
-      
-
-    const remoteVersions = await response.json();
-    const remoteVersion = remoteVersions['english']?.toString(); // Assuming 'english' is the key for the default language
-    // const remoteVersion = remoteVersions['language']?.toString();
-
-    console.log(`Remote version for ${language}:`, remoteVersion);
-
+    // Check if the local version is stored
     const localVersion = await AsyncStorage.getItem(versionKey);
-    const dbExists = await RNFS.exists(localPath);
+    let remoteVersion = localVersion; // Default if not found
+    const dbExists = await RNFS.exists(localPath); // Check if the local database file exists
 
-    if (!dbExists || localVersion !== remoteVersion) {
+    // Check network connectivity
+    const state = await NetInfo.fetch();
+    if (!state.isConnected){
+      console.warn('No Internet, can\'t check db updates, using local database if available.');
+    }
+    else {
+      console.log('Internet connection is available. Proceeding to check for updates.');
+      const response = await fetch(versionUrl);
+
+      if (!response.ok) {
+          const errorText = await response.text(); // try to read error message
+          throw new Error(`Failed to fetch version file: ${response.status} - ${errorText}`);
+        }
+        
+  
+      const remoteVersions = await response.json();
+      remoteVersion = remoteVersions['english']?.toString(); // Assuming 'english' is the key for the default language
+      // const remoteVersion = remoteVersions['language']?.toString();
+  
+      console.log(`Remote version for ${language}:`, remoteVersion);
+
+    }
+
+
+    if ((state.isConnected && !dbExists) || (state.isConnected && localVersion !== remoteVersion)) {
       console.log(`⬇️ Downloading ${dbFileName}...`);
       console.log(`Database URL: ${dbUrl}`);
       console.log(`Local path: ${localPath}`);
@@ -55,7 +69,11 @@ export const ensureDatabaseExists = async (language) => {
       } else {
         throw new Error('❌ Failed to download DB');
       }
-    } else {
+    } 
+    else if (!state.isConnected && dbExists) {
+      console.log(`No Internet connectivity using local database: ${dbFileName}`);
+    }
+    else {
       console.log('📦 DB already up to date');
     }
 
