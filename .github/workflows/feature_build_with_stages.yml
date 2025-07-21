@@ -102,6 +102,9 @@ jobs:
           echo "MYAPP_RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> android/gradle.properties
           echo "MYAPP_RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> android/gradle.properties
 
+      - name: 🛠️ Make gradlew executable
+        run: chmod +x android/gradlew
+        
       - name: 🏗️ Build Release APK
         run: cd android && ./gradlew assembleRelease
 
@@ -124,3 +127,31 @@ jobs:
 
       - name: ✅ Notify or Publish (Optional)
         run: echo "Ready for deployment or Play Store upload"
+  notify_discord:
+    needs: build_apk
+    runs-on: ubuntu-latest
+    if: always()  # Ensures it runs even if previous jobs fail
+    steps:
+      - name: 📣 Notify Discord
+        run: |
+          STATUS="${{ needs.upload_apk.result }}"
+          if [ "$STATUS" = "success" ]; then
+            COLOR="3066993"  # Green
+            EMOJI="✅"
+          elif [ "$STATUS" = "failure" ]; then
+            COLOR="15158332"  # Red
+            EMOJI="❌"
+          else
+            COLOR="8359053"  # Orange
+            EMOJI="⚠️"
+          fi
+
+          curl -H "Content-Type: application/json" \
+            -X POST -d "{
+              \"username\": \"GitHub Actions Bot\",
+              \"embeds\": [{
+                \"title\": \"$EMOJI Build $STATUS\",
+                \"description\": \"Repository: [${{ github.repository }}](https://github.com/${{ github.repository }})\\nBranch: \`${{ github.ref_name }}\`\\nCommit: [View Commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\",
+                \"color\": $COLOR
+              }]
+            }" ${{ secrets.DISCORD_WEBHOOK_URL }}
