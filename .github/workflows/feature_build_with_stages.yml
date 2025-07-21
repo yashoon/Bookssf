@@ -102,8 +102,13 @@ jobs:
           echo "MYAPP_RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> android/gradle.properties
           echo "MYAPP_RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> android/gradle.properties
 
-      - name: 🛠️ Make gradlew executable
-        run: chmod +x android/gradlew
+      - name: ⚙️ Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: 📥 Install dependencies
+        run: npm ci
         
       - name: 🏗️ Build Release APK
         run: cd android && ./gradlew assembleRelease
