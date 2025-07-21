@@ -142,7 +142,7 @@ jobs:
     steps:
       - name: 📣 Notify Discord
         run: |
-          STATUS="${{ needs.upload_apk.result }}"
+          STATUS="${{ needs.build_apk.result }}"
           if [ "$STATUS" = "success" ]; then
             COLOR="3066993"  # Green
             EMOJI="✅"
