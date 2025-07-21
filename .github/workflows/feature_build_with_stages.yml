@@ -11,8 +11,7 @@ jobs:
     steps:
       - name: 🧱 Checkout
         uses: actions/checkout@v4
-
-    steps:
+        
       - name: ⚙️ Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -41,6 +40,10 @@ jobs:
           restore-keys: |
             npm-${{ runner.os }}-
 
+  install_Deps:
+    runs-on: ubuntu-latest
+    
+    steps:
       - name: 📥 Install deps
         run: |
           npm install
@@ -52,9 +55,16 @@ jobs:
           echo "MYAPP_RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> android/gradle.properties
           echo "MYAPP_RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> android/gradle.properties
 
+  build_apk:
+    runs-on: ubuntu-latest
+    steps:
       - name: 🏗️ Build Release APK
         run: cd android && ./gradlew assembleRelease
 
+  upload_apk:
+    runs-on: ubuntu-latest
+    
+    steps:
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
