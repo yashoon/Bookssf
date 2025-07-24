@@ -17,8 +17,8 @@ export const getDBConnection = async () => {
 
 // getting database form firebase
 
-export const getDBConnection_local = async (language = 'ssf_english') => {
-  console.log('language name: ' + language);
+export const getDBConnection_local = async (language) => {
+  console.log('language name from database.js: ' + language);
   
   const dbPath = await ensureDatabaseExists(language);
   const dbName = `${language}.db`;
@@ -27,11 +27,12 @@ export const getDBConnection_local = async (language = 'ssf_english') => {
     Platform.OS === 'ios'
     ? {
         name: dbName,
-        location: 'Documents', // iOS needs this
+        // location: 'Documents', // iOS needs this
+        location: 'Library', // iOS needs this
       }
     : {
         name: dbPath, // Use the full path for Android
-        location: 'default', // Android handles from DocumentDirectoryPath
+        // location: 'default', // Android handles from DocumentDirectoryPath
       },
     () => console.log('✅ Opened database for', language),
     error => console.error('❌ DB Open error:', error)

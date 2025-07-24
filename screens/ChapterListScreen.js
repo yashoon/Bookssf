@@ -5,17 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDBConnection, getUsers, getUsers1, getPreDBConnection, getDBConnection_local } from '../database/Database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
+import { use } from 'i18next';
 
-const chapters = [
-  { id: '1', title: 'The Bible' },
-  { id: '2', title: 'God' },
-  { id: '3', title: 'Man and Satan' },
-];
 
 const ChapterListScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
   
-  const { section = 1 } = route.params || {};
+  const { section = 1, language = 'english'  } = route.params || {};
   console.log("This is chapter list screen: " + section)
 //   const { i18n } = useTranslation();
   const [chapters, setChapters] =  useState([]);
@@ -25,17 +21,11 @@ const ChapterListScreen = ({ navigation, route }) => {
 
 
   useEffect(() => { 
-    // getPreDBConnection().then((db) => {
-    //     getUsers(db, 'Chapters').then((users) => {
-    //         // console.log("This is chapter List::::::: " + users)
-    //         // console.log("chapter in Json: " + JSON.stringify(users))
-    //         setChapters(users);
-    //         // console.log("This is chapter List::::::: " + users)
-    //     });   
-    // });
+  
 
     // fetching from local database from firebase
-    getDBConnection_local('ssf_english').then((db) => {
+    console.log("language from chapter list screen: " + language);
+    getDBConnection_local(language).then((db) => {
       getUsers(db, 'chapters').then((users) => {
           // console.log("This is chapter List::::::: " + users)
           // console.log("chapter in Json: " + JSON.stringify(users))
@@ -43,6 +33,7 @@ const ChapterListScreen = ({ navigation, route }) => {
           // console.log("This is chapter List::::::: " + users)
       });   
   });
+
     // fetching from local database from firebase
 
     //code for fetching last read and showing modal
@@ -62,6 +53,22 @@ const ChapterListScreen = ({ navigation, route }) => {
     //code for fetching last read and showing modal
 
   }, []);
+  
+
+  useEffect(() => {
+    
+    // fetching from local database from firebase
+    console.log("language from chapter list screen: " + language);
+    getDBConnection_local(language).then((db) => {
+      getUsers(db, 'chapters').then((users) => {
+          // console.log("This is chapter List::::::: " + users)
+          // console.log("chapter in Json: " + JSON.stringify(users))
+          setChapters(users);
+          // console.log("This is chapter List::::::: " + users)
+      });
+    }); 
+
+}, [language]);
 
   const handleContinue = () => {
     setShowModal(false);
@@ -99,7 +106,7 @@ console.log("this is rendering page")
         renderItem={({ item }) => (
           <TouchableOpacity style={
             [styles.chapter]
-            } onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id })}>
+            } onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id,language: language })}>
             <Text style={[styles.chapterText,
               item.parent_chapter == null ? styles.ListTitle : styles.subchapter
             ]}>

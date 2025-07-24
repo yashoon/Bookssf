@@ -9,15 +9,17 @@ import AppLayout from '../components/AppLayout';
 import { WebView } from 'react-native-webview';
 import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { use } from 'i18next';
 
 const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslateY }) => {
 
-  console.log("This is chapter content screen: " + route.params.chapterId);
+  const { chapterId = 1, language = 'english' } = route.params || {};
+  // console.log("This is chapter content screen: " + route.params.chapterId);
   console.log("This is chapter content screen: " + navigation);
   console.log("This is chapter content screen: " + toggleTabBar);
   console.log("This is chapter content screen: " + tabBarTranslateY);
 
-  const { chapterId } = route.params;
+  
   const { width } = useWindowDimensions();
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +76,7 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
       console.log('Error during save:', e);
       // Optionally show a toast or fallback
     }
-    navigation.navigate('ChapterContent', { chapterId });
+    navigation.navigate('ChapterContent', { chapterId, language });
   };
 
   const saveLastReadChapter = async (chapterId) => {
@@ -133,9 +135,12 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
   };
 
   console.log("before effect");
+
+
+
   useEffect(() => { 
     // getPreDBConnection().then((db) => {
-    getDBConnection_local().then((db) => {
+    getDBConnection_local(language).then((db) => {
         getUsers(db, 'contents').then((users) => {
             console.log("This is content List::::::: " + users)
             setContents(users);
@@ -177,8 +182,8 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
 
   // Sync chapterId from route
 useEffect(() => {
-  console.log("this is chapterId from route" + route.params.chapterId)
-  setCurrentChapterId(route.params.chapterId);
+  console.log("this is chapterId from route" + chapterId)
+  setCurrentChapterId(chapterId);
   try {
     console.log("saving in async from next and previous buttons " + chapterId);
      saveLastReadChapter(chapterId);
@@ -186,7 +191,33 @@ useEffect(() => {
     console.log('Error during save:', e);
     // Optionally show a toast or fallback
   }
-}, [route.params.chapterId]);
+}, [chapterId]);
+
+useEffect(() => {
+  // Update font size in WebView whenever it changes
+
+  getDBConnection_local(language).then((db) => {
+    getUsers(db, 'contents').then((users) => {
+        console.log("This is content List::::::: " + users)
+        setContents(users);
+        // Convert array to object
+        users.forEach(item => {
+          contentMap[item.id] = item;
+        });
+        console.log("This is Content List::::::: " + users)
+        setLoading(false);
+    }, (error) => {
+      console.log("This is error::::::: " + error)
+      // setLoading(true);
+    }
+  );
+    getMaxChapterId(db, 'contents').then((maxId) => {
+      // console.log('Max chapter ID:', maxId);
+      setMaxChapterId(maxId);
+    });
+});
+
+}, [language]);
 
 // for animating the nav buttons
 // const buttonBottom = tabBarTranslateY.interpolate({

@@ -1,27 +1,93 @@
 // screens/SearchScreen.js
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { getDBConnection_local, getPreDBConnection, getUsers } from '../database/Database';
 import { useNavigation } from '@react-navigation/native';
 import AppLayout from '../components/AppLayout';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SearchScreen = () => {
+const SearchScreen = (navigation, route) => {
   const [query, setQuery] = useState('');
   const [allChapters, setAllChapters] = useState([]);
   const [filteredChapters, setFilteredChapters] = useState([]);
-  const navigation = useNavigation();
+  // const navigation = useNavigation();
+  // let lan = AsyncStorage.getItem('selectedLanguage').then((language) => {
+  //   console.log("Language from AsyncStorage in SearchScreen: " + language);
+  //   return language;
+  // });
+
+  const getLanguage = async () => {
+    const language = await AsyncStorage.getItem('selectedLanguage');
+    console.log("Language from AsyncStorage in SearchScreen: " + language);
+    return language || 'english'; // Default to 'english' if not set
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+  
+      const fetchData = async () => {
+        try {
+          const language = await getLanguage(); // from AsyncStorage
+          console.log("Language from AsyncStorage in SearchScreen: " + language);
+  
+          const db = await getDBConnection_local(language);
+          const chapters = await getUsers(db, 'contents');
+  
+          if (isActive) {
+            setAllChapters(chapters);
+            setFilteredChapters(chapters);
+            console.log("Fetched chapters:", chapters);
+          }
+        } catch (e) {
+          console.log('Error fetching chapters:', e);
+        }
+      };
+  
+      fetchData();
+  
+      return () => {
+        isActive = false; // cleanup on unmount
+      };
+    }, []) // you can add dependencies here if needed
+  );
+
 
   useEffect(() => {
     // getPreDBConnection().then((db) => {
-    getDBConnection_local().then((db) => {
+    AsyncStorage.getItem('selectedLanguage').then((language) => {
+      console.log("Language from AsyncStorage in SearchScreen: " + language);
+      
+    getDBConnection_local(language).then((db) => {
       getUsers(db, 'contents').then((chapters) => {
         setAllChapters(chapters);
         setFilteredChapters(chapters);
         console.log("Fetched chapters:", chapters);
       });
     });
-  }, []);
+    });
+  }, 
+  
+  []);
+
+  useEffect(() => {
+    // getPreDBConnection().then((db) => {
+    AsyncStorage.getItem('selectedLanguage').then((language) => {
+      console.log("Language from AsyncStorage in SearchScreen: " + language);
+      
+    getDBConnection_local(language).then((db) => {
+      getUsers(db, 'contents').then((chapters) => {
+        setAllChapters(chapters);
+        setFilteredChapters(chapters);
+        console.log("Fetched chapters:", chapters);
+      });
+    });
+    });
+  }, 
+  
+  []);
 
   useEffect(() => {
     console.log("Query changed:", query);
@@ -68,7 +134,7 @@ const SearchScreen = () => {
                 renderItem={({ item }) => (
                 <TouchableOpacity
                     style={styles.item}
-                    onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id })}
+                    onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id, language: lan })}
                 >
                     {/* <Text 
                     // style={styles.title}

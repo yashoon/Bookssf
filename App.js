@@ -17,6 +17,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import TabNavigator from './navigation/TabNavigator'
 import { FontSizeProvider } from './components/FontSizeContext/FontSizeContext';
 import Toast from 'react-native-toast-message';
+import { LanguageProvider } from './components/LanguageContext';
 
 
 
@@ -64,6 +65,7 @@ export default function App() {
 
   return (
     // <>
+    // <LanguageProvider> {/* ✅ Wrap once here */}
     <FontSizeProvider>
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false, headerLeft: null, headerTitleAlign: 'center' }}>
@@ -74,6 +76,7 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
     </FontSizeProvider>
+    // </LanguageProvider>
     // <Toast />
     // </>
   );

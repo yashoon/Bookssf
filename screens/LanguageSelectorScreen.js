@@ -7,7 +7,7 @@ import AppLayout from '../components/AppLayout';
 
 const LANGUAGE_OPTIONS = [
   { label: 'English', value: 'english' },
-  { label: 'Napali', value: 'nepali' },
+  { label: 'Nepali', value: 'nepali' },
   { label: 'Telugu', value: 'telugu' },
   // Add more as needed
 ];
@@ -21,7 +21,8 @@ export default function LanguageSelectorScreen({ navigation }) {
     try {
     //   await ensureDatabaseExists(selectedLang);
         console.log("Selected Language -----------: " + language);
-      await AsyncStorage.setItem('selectedLanguage', language);
+      await AsyncStorage.setItem('selectedLanguage', language.toString());
+      console.log("Language saved to AsyncStorage: " + await AsyncStorage.getItem('selectedLanguage'));
       Alert.alert('Success', `Language set to ${language}`);
     } catch (err) {
       Alert.alert('Error', 'Failed to update language');
@@ -48,8 +49,8 @@ export default function LanguageSelectorScreen({ navigation }) {
           } onPress={() => { 
             console.log("Selected Language ++++++++: " + item.value);
             setSelectedLang(item.value);
-            handleLanguageChange(item.value);
-            navigation.navigate('Sections', { language: item.value }); 
+            handleLanguageChange(item.value.toString());
+            navigation.navigate('Sections', { language: item.value.toString() }); 
         }
         }>
           <Text style={[styles.chapterText
@@ -60,13 +61,13 @@ export default function LanguageSelectorScreen({ navigation }) {
       )}
     /> 
 
-      {loading ? (
+      {/* {loading ? (
         <ActivityIndicator size="large" />
       ) : (
         <Text style={styles.button} onPress={handleLanguageChange}>
           Save & Download
         </Text>
-      )}
+      )} */}
     </View>
     </AppLayout>
   );
