@@ -8,8 +8,9 @@ import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 const WelcomeScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
-      <Image source={require('../assets/welcome.png')} style={styles.image} />
-      <Text style={styles.title}>Welcome to Shepherd's Staff</Text>
+      <Image source={require('../assets/SS_Icon.png')} style={styles.image} />
+      <Text style={styles.title}></Text>
+      {/* <Text style={styles.title}>Welcome to Shepherd's Staff</Text> */}
       {/* <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ChapterList')}> */}
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Shepherd's Staff")}>
         <Text style={styles.buttonText}>Start Reading</Text>

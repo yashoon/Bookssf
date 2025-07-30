@@ -8,11 +8,12 @@ import AppLayout from '../components/AppLayout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SearchScreen = (navigation, route) => {
+const SearchScreen = () => {
   const [query, setQuery] = useState('');
   const [allChapters, setAllChapters] = useState([]);
   const [filteredChapters, setFilteredChapters] = useState([]);
-  // const navigation = useNavigation();
+  const navigation = useNavigation();
+  const [language, setLanguage] = useState('english'); // Default language
   // let lan = AsyncStorage.getItem('selectedLanguage').then((language) => {
   //   console.log("Language from AsyncStorage in SearchScreen: " + language);
   //   return language;
@@ -30,8 +31,9 @@ const SearchScreen = (navigation, route) => {
   
       const fetchData = async () => {
         try {
-          const language = await getLanguage(); // from AsyncStorage
+          language = await getLanguage(); // from AsyncStorage
           console.log("Language from AsyncStorage in SearchScreen: " + language);
+          setLanguage(language);
   
           const db = await getDBConnection_local(language);
           const chapters = await getUsers(db, 'contents');
@@ -57,7 +59,8 @@ const SearchScreen = (navigation, route) => {
 
   useEffect(() => {
     // getPreDBConnection().then((db) => {
-    AsyncStorage.getItem('selectedLanguage').then((language) => {
+    // AsyncStorage.getItem('selectedLanguage').then((language) => {
+    getLanguage().then((language) => {
       console.log("Language from AsyncStorage in SearchScreen: " + language);
       
     getDBConnection_local(language).then((db) => {
@@ -72,22 +75,22 @@ const SearchScreen = (navigation, route) => {
   
   []);
 
-  useEffect(() => {
-    // getPreDBConnection().then((db) => {
-    AsyncStorage.getItem('selectedLanguage').then((language) => {
-      console.log("Language from AsyncStorage in SearchScreen: " + language);
+  // useEffect(() => {
+  //   // getPreDBConnection().then((db) => {
+  //   AsyncStorage.getItem('selectedLanguage').then((language) => {
+  //     console.log("Language from AsyncStorage in SearchScreen: " + language);
       
-    getDBConnection_local(language).then((db) => {
-      getUsers(db, 'contents').then((chapters) => {
-        setAllChapters(chapters);
-        setFilteredChapters(chapters);
-        console.log("Fetched chapters:", chapters);
-      });
-    });
-    });
-  }, 
+  //   getDBConnection_local(language).then((db) => {
+  //     getUsers(db, 'contents').then((chapters) => {
+  //       setAllChapters(chapters);
+  //       setFilteredChapters(chapters);
+  //       console.log("Fetched chapters:", chapters);
+  //     });
+  //   });
+  //   });
+  // }, 
   
-  []);
+  // []);
 
   useEffect(() => {
     console.log("Query changed:", query);
@@ -134,7 +137,7 @@ const SearchScreen = (navigation, route) => {
                 renderItem={({ item }) => (
                 <TouchableOpacity
                     style={styles.item}
-                    onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id, language: lan })}
+                    onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id, language: language})}
                 >
                     {/* <Text 
                     // style={styles.title}

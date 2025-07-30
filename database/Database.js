@@ -21,14 +21,15 @@ export const getDBConnection_local = async (language) => {
   console.log('language name from database.js: ' + language);
   
   const dbPath = await ensureDatabaseExists(language);
+  console.log('Database path:', dbPath);
   const dbName = `${language}.db`;
 
   return SQLite.openDatabase(
     Platform.OS === 'ios'
     ? {
         name: dbName,
-        // location: 'Documents', // iOS needs this
-        location: 'Library', // iOS needs this
+        location: 'Documents', // iOS needs this
+        // location: 'Library', // iOS needs this
       }
     : {
         name: dbPath, // Use the full path for Android
