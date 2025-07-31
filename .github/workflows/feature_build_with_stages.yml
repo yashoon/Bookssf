@@ -92,5 +92,7 @@ jobs:
               \"username\": \"GitHub Actions Bot\",
               \"embeds\": [{
                 \"title\": \"$EMOJI Build $STATUS\",
-                \"description\": \"Repository: [${{ github.repository }}](https://github.com/${{ github.repository }})\\nBranch: \`${{ github.ref_name }}\`\\nCommit: [View Commit](https://github.com/${{ github.repository }}/commit/${{ gith)_
-
+                \"description\": \"Repository: [${{ github.repository }}](https://github.com/${{ github.repository }})\\nBranch: \`${{ github.ref_name }}\`\\nCommit: [View Commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\",
+                \"color\": $COLOR
+              }]
+            }" ${{ secrets.DISCORD_WEBHOOK_URL }}
