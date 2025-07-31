@@ -6,45 +6,17 @@ on:
       - 'feature/**'
 
 jobs:
-  build:
+  build_apk:
     runs-on: ubuntu-latest
 
     steps:
       - name: 🧱 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 💾 Upload Source Code for Next Jobs
-        uses: actions/upload-artifact@v4
-        with:
-          name: source-code
-          path: .
-  
-  install_deps:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 📥 Download Source Code
-        uses: actions/download-artifact@v4
-        with:
-          name: source-code
-          path: .
-
-      - name: ⚙️ Set up Node and Install Dependencies
+      - name: ⚙️ Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-      - run: npm ci
-
-      - name: 📦 Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
 
       - name: 📦 Cache npm
         uses: actions/cache@v4
@@ -54,36 +26,18 @@ jobs:
           restore-keys: |
             npm-${{ runner.os }}-
 
-      - name: 💾 Upload Node Modules and Gradle for Next Job
-        uses: actions/upload-artifact@v4
+      - name: 📦 Cache Gradle
+        uses: actions/cache@v4
         with:
-          name: build-env
           path: |
-            node_modules
-            android/gradle
-            android/gradlew
-            android/gradlew.bat
-            android/gradle.properties
-            android/app/build.gradle
-            android/build.gradle
-            android/settings.gradle
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
 
-  build_apk:
-    needs: install_deps
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 📥 Download Source Code
-        uses: actions/download-artifact@v4
-        with:
-          name: source-code
-          path: .
-
-      - name: 📥 Download Build Env
-        uses: actions/download-artifact@v4
-        with:
-          name: build-env
-          path: .
+      - name: 📥 Install Dependencies
+        run: npm ci
 
       - name: ⚙️ Set up JDK
         uses: actions/setup-java@v4
@@ -102,19 +56,11 @@ jobs:
           echo "MYAPP_RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> android/gradle.properties
           echo "MYAPP_RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> android/gradle.properties
 
-      - name: ⚙️ Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: 📥 Install dependencies
-        run: npm ci
-        
-      - name: 🛠️ Make gradlew executable
+      - name: 🛠️ Make gradlew Executable
         run: chmod +x android/gradlew
-        
+
       - name: 🏗️ Build Release APK
-        run: cd android && ./gradlew assembleRelease
+        run: cd android && ./gradlew assembleRelease --parallel
 
       - name: 💾 Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -122,23 +68,11 @@ jobs:
           name: release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
 
-  deploy:
-    needs: build_apk
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 📥 Download APK Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: release-apk
-          path: ./release
-
-      - name: ✅ Notify or Publish (Optional)
-        run: echo "Ready for deployment or Play Store upload"
   notify_discord:
     needs: build_apk
     runs-on: ubuntu-latest
-    if: always()  # Ensures it runs even if previous jobs fail
+    if: always()
+
     steps:
       - name: 📣 Notify Discord
         run: |
@@ -153,13 +87,10 @@ jobs:
             COLOR="8359053"  # Orange
             EMOJI="⚠️"
           fi
-
           curl -H "Content-Type: application/json" \
             -X POST -d "{
               \"username\": \"GitHub Actions Bot\",
               \"embeds\": [{
                 \"title\": \"$EMOJI Build $STATUS\",
-                \"description\": \"Repository: [${{ github.repository }}](https://github.com/${{ github.repository }})\\nBranch: \`${{ github.ref_name }}\`\\nCommit: [View Commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\",
-                \"color\": $COLOR
-              }]
-            }" ${{ secrets.DISCORD_WEBHOOK_URL }}
+                \"description\": \"Repository: [${{ github.repository }}](https://github.com/${{ github.repository }})\\nBranch: \`${{ github.ref_name }}\`\\nCommit: [View Commit](https://github.com/${{ github.repository }}/commit/${{ gith)_
+
