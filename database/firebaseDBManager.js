@@ -95,7 +95,7 @@ export const ensureDatabaseExists = async (language) => {
 
 
     // if ((state.isConnected && !dbExists) || (state.isConnected && localVersion !== remoteVersion)) {
-    if (!dbExists) {
+    if ((!dbExists) || (localVersion !== remoteVersion)) {
       console.log(`⬇️ Downloading ${dbFileName}...`);
       console.log(`Database URL: ${dbUrl}`);
       console.log(`Local path: ${localPath}`);

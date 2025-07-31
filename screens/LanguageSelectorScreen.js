@@ -1,8 +1,9 @@
-import React, { lazy, useState } from 'react';
+import React, { lazy, useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Alert, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
+import { use } from 'i18next';
 // import { ensureDatabaseExists } from '../utils/dbManager';
 
 const LANGUAGE_OPTIONS = [
@@ -30,6 +31,14 @@ export default function LanguageSelectorScreen({ navigation }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+
+    console.log("LanguageSelectorScreen mounted");
+    
+
+   }, []); 
+
 
   return (
          <AppLayout>
