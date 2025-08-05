@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import AppLayout from '../components/AppLayout';
 import { use } from 'i18next';
@@ -16,6 +16,7 @@ const SectionMenuScreen = ({ navigation, route}) => {
     const [selectedLang, setSelectedLang] = useState();
     const { language } = route.params || {language: ''};
     let final_language = language || '';
+    const isInitialRender = useRef(true);
 
 
     const fetchLanguage_new = async() => {
@@ -81,6 +82,11 @@ useEffect(() => {
 
     useEffect(() => {
 
+      if (isInitialRender.current) {
+        // Skip execution on the initial render
+        isInitialRender.current = false;
+        return;
+      }
       console.log("this is second user Effect")
       fetchLanguage_new();
       // getDBConnection_local('ssf_' + language).then((db) => {
