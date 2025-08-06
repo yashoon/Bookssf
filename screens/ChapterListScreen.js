@@ -11,17 +11,21 @@ import { use } from 'i18next';
 const ChapterListScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
   
-  const { section = 1, language = 'english'  } = route.params || {};
+  const { section = 1, language : paramLang  } = route.params || {};
   console.log("This is chapter list screen: " + section)
 //   const { i18n } = useTranslation();
   const [chapters, setChapters] =  useState([]);
   const [lastReadChapter, setLastReadChapter] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [language, setLanguage] = useState(null);
+  const [loading, setLoading] = useState(true);
 
 
 
   useEffect(() => { 
-  
+    if (!language) return;
+
+    setLoading(true);
 
     // fetching from local database from firebase
     console.log("language from chapter list screen: " + language);
@@ -30,6 +34,7 @@ const ChapterListScreen = ({ navigation, route }) => {
           // console.log("This is chapter List::::::: " + users)
           // console.log("chapter in Json: " + JSON.stringify(users))
           setChapters(users);
+          setLoading(false);
           // console.log("This is chapter List::::::: " + users)
       });   
   });
@@ -56,7 +61,8 @@ const ChapterListScreen = ({ navigation, route }) => {
   
 
   useEffect(() => {
-    
+    if (!language) return;
+    setLoading(true);
     // fetching from local database from firebase
     console.log("language from chapter list screen: " + language);
     getDBConnection_local(language).then((db) => {
@@ -64,11 +70,18 @@ const ChapterListScreen = ({ navigation, route }) => {
           // console.log("This is chapter List::::::: " + users)
           // console.log("chapter in Json: " + JSON.stringify(users))
           setChapters(users);
+          setLoading(false);
           // console.log("This is chapter List::::::: " + users)
       });
     }); 
 
 }, [language]);
+
+useEffect(() => {
+  if (paramLang) {
+    setLanguage(paramLang);
+  }
+}, [paramLang]);
 
   const handleContinue = () => {
     setShowModal(false);
@@ -93,9 +106,9 @@ console.log("this is rendering page")
       {/* <Text style={styles.title}>Table of Contents</Text> */}
      
      {
-      (filterChaptersBySection(section).length === 0) ?
+      (loading || filterChaptersBySection(section).length === 0) ?
       <View >
-        <Text style={styles.title}>No Chapters Available for Section {section}</Text>
+        <Text style={styles.title}>Loading chapters for {paramLang}...</Text>
       </View>
       : (
       
@@ -157,13 +170,13 @@ const styles = StyleSheet.create({
     mouseover: '',
   },
   ListTitle: {
-    color: 'rgb(202, 87, 11)',
+    color: 'rgb(6, 103, 54)',
     fontWeight: 'bold',
     marginVertical: 4
   },
   subchapter: {
     fontSize: 16,
-    color: 'rgb(6, 103, 54)',
+    color: 'rgb(0, 0, 0)',
     marginLeft: 16, // optional indent
     marginVertical: 4,
     fontWeight: 'bold'

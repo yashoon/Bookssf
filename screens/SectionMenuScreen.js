@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator} from 'react-native';
 import AppLayout from '../components/AppLayout';
 import { use } from 'i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,10 +17,12 @@ const SectionMenuScreen = ({ navigation, route}) => {
     const { language } = route.params || {language: ''};
     let final_language = language || '';
     const isInitialRender = useRef(true);
+    const [loading, setLoading] = useState(true);
 
 
     const fetchLanguage_new = async() => {
       try {
+        setLoading(true);
         language_cache = await AsyncStorage.getItem('selectedLanguage');
         console.log("Language from AsyncStorage: " + language_cache);
         if (language_cache) {
@@ -44,22 +46,27 @@ const SectionMenuScreen = ({ navigation, route}) => {
         }
         
         console.log("Final Language for Sections Screen: " + final_language);
-          
+        
         getDBConnection_local(final_language).then((db) => {
               getUsers(db, 'sections').then((sectionlist) => {
                   console.log("This is section List::::::: " + sectionlist)
                   // console.log("chapter in Json: " + JSON.stringify(users))
                   setSections(sectionlist);
+                  setLoading(false);
                   // console.log("This is chapter List::::::: " + users)
               });   
           });
        
       } catch (e) {
         console.log('Error loading last chapter:', e);
+        
+      } finally {
+        // setLoading(false);
       }
+      
     };
 
-useEffect(() => {
+    useEffect(() => {
         
        // this is for getting the last read chapter from AsyncStorage
         const fetchLastRead = async () => {
@@ -103,29 +110,68 @@ useEffect(() => {
     console.log("language passed to sections screen: " + language);
     console.log("language variable in sections screen: " + selectedLang);
   
-    return (
-        // <FontSizeProvider>
-        <AppLayout>
-      <View style={styles.container}>
-        <Text style={styles.title}>Sections of the Book</Text>
-        {sections.map((section) => (
-          <TouchableOpacity
-            key={section.section_id}
-            style={styles.sectionButton}
-            onPress={() => navigation.navigate('ChapterList', { section: section.section_id, language: selectedLang})}
-          >
-            <Text style={styles.sectionText}>{section.section_name}</Text>
-          </TouchableOpacity>
-        ))}
+    // return (
+    //     // <FontSizeProvider>
+    //     <AppLayout>
+    //   <View style={styles.container}>
+    //     <Text style={styles.title}>Sections of the Book</Text>
+    //     ({loading}) ? 
+    //     (<View >
+    //             <Text style={styles.title}>Loading ...</Text>
+    //       </View>) :
+    //     ({sections.map((section) => (
+    //       <TouchableOpacity
+    //         key={section.section_id}
+    //         style={styles.sectionButton}
+    //         onPress={() => navigation.navigate('ChapterList', { section: section.section_id, language: selectedLang})}
+    //       >
+    //         <Text style={styles.sectionText}>{section.section_name}</Text>
+    //       </TouchableOpacity>
+    //     ))})
 
-{/* {sections.map((section) => (
-  <Text key={section.section_id}>{section.section_name}</Text>
-))} */}
-      </View>
+
+    //   </View>
+    //   </AppLayout>
+    //   // </FontSizeProvider>
+    // );
+    return (
+      // <FontSizeProvider>
+      <AppLayout>
+        <View style={styles.container}>
+          <Text style={styles.title}>Sections of the Book</Text>
+    
+          {loading && sections.length === 0 ? (
+            <View>
+              <Text style={{textAlign: "center"}}>Loading your section ... </Text>
+              <ActivityIndicator size="large" color="green" />
+            </View>
+          ) : 
+          (!loading && sections.length === 0) ? (
+            <View>
+              <Text style={styles.title}>No Sections Available</Text>
+            </View>
+          ) : 
+          (
+            sections.map((section) => (
+              <TouchableOpacity
+                key={section.section_id}
+                style={styles.sectionButton}
+                onPress={() =>
+                  navigation.navigate('ChapterList', {
+                    section: section.section_id,
+                    language: selectedLang,
+                  })
+                }
+              >
+                <Text style={styles.sectionText}>{section.section_name}</Text>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
       </AppLayout>
       // </FontSizeProvider>
     );
-  };
+};
   
 
 
