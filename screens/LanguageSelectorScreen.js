@@ -3,6 +3,7 @@ import { View, Text, ActivityIndicator, Alert, StyleSheet, FlatList, TouchableOp
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
+import { useLanguage } from '../components/LanguageContext';
 import { use } from 'i18next';
 // import { ensureDatabaseExists } from '../utils/dbManager';
 
@@ -14,16 +15,17 @@ const LANGUAGE_OPTIONS = [
 ];
 
 export default function LanguageSelectorScreen({ navigation }) {
-  const [selectedLang, setSelectedLang] = useState('english');
+  // const [selectedLang, setSelectedLang] = useState('english');
+  const { language, setLanguage, isLoading: isLanguageLoading } = useLanguage();
   const [loading, setLoading] = useState(false);
 
   const handleLanguageChange = async (language) => {
     setLoading(true);
     try {
-    //   await ensureDatabaseExists(selectedLang);
-        console.log("Selected Language -----------: " + language);
-      await AsyncStorage.setItem('selectedLanguage', language.toString());
-      console.log("Language saved to AsyncStorage: " + await AsyncStorage.getItem('selectedLanguage'));
+
+      console.log("Selected Language: " + language);
+      language = language.toLowerCase(); // Ensure lowercase for consistency
+      await setLanguage(language);
       Alert.alert('Success', `Language set to ${language}`);
     } catch (err) {
       Alert.alert('Error', 'Failed to update language');
@@ -37,7 +39,17 @@ export default function LanguageSelectorScreen({ navigation }) {
     console.log("LanguageSelectorScreen mounted");
     
 
-   }, []); 
+   }, []);
+   
+     // Set initial selected language from context
+  useEffect(() => {
+    console.log("LanguageSelectorScreen mounted");
+    
+    if (language && !isLanguageLoading) {
+      setLanguage(language);
+      console.log("Current language from context:", language);
+    }
+  }, [language, isLanguageLoading]);
 
 
   return (
@@ -57,7 +69,7 @@ export default function LanguageSelectorScreen({ navigation }) {
         //   } onPress={() => navigation.navigate('ChapterContent', { chapterId: 1})}>
           } onPress={() => { 
             console.log("Selected Language ++++++++: " + item.value);
-            setSelectedLang(item.value);
+            // setSelectedLang(item.value);
             handleLanguageChange(item.value.toString());
             navigation.navigate('Sections', { language: item.value.toString() }); 
         }

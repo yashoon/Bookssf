@@ -8,6 +8,7 @@ import AppLayout from '../components/AppLayout';
 import { WebView } from 'react-native-webview';
 import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useLanguage } from '../components/LanguageContext';
 
 const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslateY }) => {
 
@@ -16,7 +17,7 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
   const { width } = useWindowDimensions();
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [language, setLanguage] = useState(paramLang); // ✅ Direct initialization instead of null
+  // const [language, setLanguage] = useState(paramLang); // ✅ Direct initialization instead of null
   const [currentChapterId, setCurrentChapterId] = useState(chapterId);
   const [maxChapterId, setMaxChapterId] = useState(0);
   const { fontSize, increaseFont, decreaseFont } = useFontSize();
@@ -28,6 +29,7 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
   const SCROLL_DEBOUNCE_MS = 300;
   const MIN_SCROLL_DELTA = 15;
   const tabBarHeight = useBottomTabBarHeight();
+  const { language, isLoading: isLanguageLoading } = useLanguage();
 
   // ✅ Memoize contentMap properly - prevents recreation on every render
   const contentMap = useMemo(() => {
@@ -123,11 +125,11 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
   }, [showUI, toggleUI]);
 
   // ✅ Separate useEffect for language initialization - prevents unnecessary re-runs
-  useEffect(() => {
-    if (paramLang && paramLang !== language) {
-      setLanguage(paramLang);
-    }
-  }, [paramLang]); // Only depend on paramLang, not language to avoid loops
+  // useEffect(() => {
+  //   if (paramLang && paramLang !== language) {
+  //     setLanguage(paramLang);
+  //   }
+  // }, [paramLang]); // Only depend on paramLang, not language to avoid loops
 
   // ✅ Main data loading effect - only run when language changes
   useEffect(() => {
@@ -152,7 +154,7 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
       });
     });
 
-  }, [language]); // ✅ Only depend on language - prevents unnecessary database calls
+  }, [language, isLanguageLoading]); // ✅ Only depend on language - prevents unnecessary database calls
 
   // ✅ Separate effect for font size updates - prevents mixing concerns
   useEffect(() => {

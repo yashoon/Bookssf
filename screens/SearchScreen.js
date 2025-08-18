@@ -5,35 +5,38 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getDBConnection_local, getPreDBConnection, getUsers } from '../database/Database';
 import { useNavigation } from '@react-navigation/native';
 import AppLayout from '../components/AppLayout';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLanguage } from '../components/LanguageContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SearchScreen = () => {
   const [query, setQuery] = useState('');
   const [allChapters, setAllChapters] = useState([]);
   const [filteredChapters, setFilteredChapters] = useState([]);
+  const [isLoadingChapters, setIsLoadingChapters] = useState(false);
   const navigation = useNavigation();
-  const [language, setLanguage] = useState('english'); // Default language
-  // let lan = AsyncStorage.getItem('selectedLanguage').then((language) => {
-  //   console.log("Language from AsyncStorage in SearchScreen: " + language);
-  //   return language;
-  // });
+  // const [language, setLanguage] = useState('english'); // Default language
+  const { language, isLoading: isLanguageLoading } = useLanguage();
 
-  const getLanguage = async () => {
-    const language = await AsyncStorage.getItem('selectedLanguage');
-    console.log("Language from AsyncStorage in SearchScreen: " + language);
-    return language || 'english'; // Default to 'english' if not set
-  };
+  // const getLanguage = async () => {
+  //   const language = await AsyncStorage.getItem('selectedLanguage');
+  //   console.log("Language from AsyncStorage in SearchScreen: " + language);
+  //   return language || 'english'; // Default to 'english' if not set
+  // };
 
   useFocusEffect(
     React.useCallback(() => {
       let isActive = true;
-  
+
       const fetchData = async () => {
+        if (!language || isLanguageLoading) return; // Wait for language to be loaded
+  
+      // const fetchData = async () => {
         try {
-          language = await getLanguage(); // from AsyncStorage
+          // language = await getLanguage(); // from AsyncStorage
+          setIsLoadingChapters(true);
+          console.log("Fetching chapters for language:", language);
           console.log("Language from AsyncStorage in SearchScreen: " + language);
-          setLanguage(language);
+          // setLanguage(language);
   
           const db = await getDBConnection_local(language);
           const chapters = await getUsers(db, 'contents');
@@ -46,6 +49,11 @@ const SearchScreen = () => {
         } catch (e) {
           console.log('Error fetching chapters:', e);
         }
+       finally {
+        if (isActive) {
+          setIsLoadingChapters(false);
+        }
+      }
       };
   
       fetchData();
@@ -53,44 +61,35 @@ const SearchScreen = () => {
       return () => {
         isActive = false; // cleanup on unmount
       };
-    }, []) // you can add dependencies here if needed
+    }, [language, isLanguageLoading]) // you can add dependencies here if needed
   );
 
 
   useEffect(() => {
-    // getPreDBConnection().then((db) => {
-    // AsyncStorage.getItem('selectedLanguage').then((language) => {
-    getLanguage().then((language) => {
-      console.log("Language from AsyncStorage in SearchScreen: " + language);
-      
-    getDBConnection_local(language).then((db) => {
-      getUsers(db, 'contents').then((chapters) => {
+    if (language && !isLanguageLoading) {
+      const fetchChapters = async () => {
+        try {
+          setIsLoadingChapters(true);
+          console.log("Language changed, fetching chapters for:", language);
+          const db = await getDBConnection_local(language);
+          const chapters = await getUsers(db, 'contents');
+
         setAllChapters(chapters);
         setFilteredChapters(chapters);
-        console.log("Fetched chapters:", chapters);
-      });
-    });
-    });
-  }, 
-  
-  []);
+        console.log("Fetched chapters for language change:", chapters.length);
+}
+ catch (e) {
+        console.log('Error fetching chapters on language change:', e);
+      } finally {
+        setIsLoadingChapters(false);
+      }
+    }
+     
 
-  // useEffect(() => {
-  //   // getPreDBConnection().then((db) => {
-  //   AsyncStorage.getItem('selectedLanguage').then((language) => {
-  //     console.log("Language from AsyncStorage in SearchScreen: " + language);
-      
-  //   getDBConnection_local(language).then((db) => {
-  //     getUsers(db, 'contents').then((chapters) => {
-  //       setAllChapters(chapters);
-  //       setFilteredChapters(chapters);
-  //       console.log("Fetched chapters:", chapters);
-  //     });
-  //   });
-  //   });
-  // }, 
-  
-  // []);
+    fetchChapters();
+  };
+  }, [language]);
+
 
   useEffect(() => {
     console.log("Query changed:", query);
@@ -121,6 +120,25 @@ const SearchScreen = () => {
     return text.slice(start, end) + '...';
   };
 
+  const stripHtml = (html) => {
+    if (!html) return "";
+    return html
+      // remove style/script tags and their content
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      // remove all HTML tags
+      .replace(/<\/?[^>]+(>|$)/g, "")
+      // decode HTML entities like &nbsp; &amp;
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      // trim extra spaces/newlines
+      .trim();
+  };
+
   return (
     <AppLayout>
         {/* <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1 }}></SafeAreaView> */}
@@ -139,12 +157,8 @@ const SearchScreen = () => {
                     style={styles.item}
                     onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id, language: language})}
                 >
-                    {/* <Text 
-                    // style={styles.title}
-                    style={{ fontSize: 18, color: 'gray' }}
-                    >{item.content}</Text> */}
                     <Text style={styles.chapterTitle}>Chapter {item.id}</Text>
-                    <Text style={styles.snippet}>{getSnippet(item.content, query)}</Text>
+                    <Text style={styles.snippet}>{getSnippet(stripHtml(item.content), query)}</Text>
                 </TouchableOpacity>
                 )}
                 ListEmptyComponent={() => (

@@ -66,6 +66,7 @@ export default function App() {
   return (
     // <>
     // <LanguageProvider> {/* ✅ Wrap once here */}
+    <LanguageProvider>
     <FontSizeProvider>
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false, headerLeft: null, headerTitleAlign: 'center' }}>
@@ -76,7 +77,7 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
     </FontSizeProvider>
-    // </LanguageProvider>
+     </LanguageProvider>
     // <Toast />
     // </>
   );

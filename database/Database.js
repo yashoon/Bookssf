@@ -28,7 +28,7 @@ export const getDBConnection_local = async (language) => {
     Platform.OS === 'ios'
     ? {
         name: dbName,
-        location: 'Documents', // iOS needs this
+        // location: 'Documents', // iOS needs this
         // location: 'Library', // iOS needs this
       }
     : {
@@ -101,9 +101,9 @@ export const getUsers = async (db, table) => {
         let users = [];
         for (let i = 0; i < results.rows.length; i++) {
           users.push(results.rows.item(i));
-          console.log(i);
+          // console.log(i);
         }
-        console.log('✅ Users fetched:', users);
+        // console.log('✅ Users fetched:', users);
          resolve(users);
       },
       error => console.error('Error fetching users:', error)

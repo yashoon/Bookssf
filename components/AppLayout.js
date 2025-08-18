@@ -22,7 +22,7 @@ export default function AppLayout({ children, fontSize, increaseFont, decreaseFo
         Animated.timing(headerTranslateY, {
           toValue: showAppLayout ? 0 : -150,  // Slide the header up or down
           duration: 300,
-          // useNativeDriver: true,
+          useNativeDriver: false,
         }),
   
         // Collapse/expand the height of the header
@@ -36,14 +36,14 @@ export default function AppLayout({ children, fontSize, increaseFont, decreaseFo
         Animated.timing(headerOpacity, {
           toValue: showAppLayout ? 1 : 0,  // Fade in or out
           duration: 300,
-          // useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]).start();
     }, [showAppLayout]);  // Run the animation when `showAppLayout` changes
 
   return (
     
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1}}>
       <Animated.View
         style={{
           transform: [{ translateY: headerTranslateY }],

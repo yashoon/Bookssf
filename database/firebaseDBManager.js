@@ -87,11 +87,11 @@ export const ensureDatabaseExists = async (language) => {
       }
   };
 
-  checkPermissions(localPath).then((hasPermission) => {
-    if (!hasPermission) {
-      throw new Error('No write permission to the directory');
-    }
-  });
+  // checkPermissions(localPath).then((hasPermission) => {
+  //   if (!hasPermission) {
+  //     throw new Error('No write permission to the directory');
+  //   }
+  // });
 
 
     // if ((state.isConnected && !dbExists) || (state.isConnected && localVersion !== remoteVersion)) {

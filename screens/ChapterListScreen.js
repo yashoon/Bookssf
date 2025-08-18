@@ -5,11 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDBConnection, getUsers, getUsers1, getPreDBConnection, getDBConnection_local } from '../database/Database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
+import { useLanguage } from '../components/LanguageContext';
 import { use } from 'i18next';
 
 
 const ChapterListScreen = ({ navigation, route }) => {
-  const { t } = useTranslation();
+  // const { t } = useTranslation();
   
   const { section = 1, language : paramLang  } = route.params || {};
   console.log("This is chapter list screen: " + section)
@@ -17,13 +18,13 @@ const ChapterListScreen = ({ navigation, route }) => {
   const [chapters, setChapters] =  useState([]);
   const [lastReadChapter, setLastReadChapter] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [language, setLanguage] = useState(null);
+  const { language, isLoading: isLanguageLoading } = useLanguage();
   const [loading, setLoading] = useState(true);
 
 
 
   useEffect(() => { 
-    if (!language) return;
+    if (!language || isLanguageLoading) return;
 
     setLoading(true);
 
@@ -61,27 +62,18 @@ const ChapterListScreen = ({ navigation, route }) => {
   
 
   useEffect(() => {
-    if (!language) return;
+    if (!language || isLanguageLoading) return;
     setLoading(true);
     // fetching from local database from firebase
     console.log("language from chapter list screen: " + language);
     getDBConnection_local(language).then((db) => {
       getUsers(db, 'chapters').then((users) => {
-          // console.log("This is chapter List::::::: " + users)
-          // console.log("chapter in Json: " + JSON.stringify(users))
           setChapters(users);
           setLoading(false);
-          // console.log("This is chapter List::::::: " + users)
       });
     }); 
 
-}, [language]);
-
-useEffect(() => {
-  if (paramLang) {
-    setLanguage(paramLang);
-  }
-}, [paramLang]);
+}, [language, isLanguageLoading]);
 
   const handleContinue = () => {
     setShowModal(false);
@@ -101,14 +93,12 @@ useEffect(() => {
 console.log("this is rendering page")
   return (
     <AppLayout>
-    <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1 }}>
     <View>
-      {/* <Text style={styles.title}>Table of Contents</Text> */}
      
      {
       (loading || filterChaptersBySection(section).length === 0) ?
       <View >
-        <Text style={styles.title}>Loading chapters for {paramLang}...</Text>
+        <Text style={styles.title}>Loading chapters for {language}...</Text>
       </View>
       : (
       
@@ -116,10 +106,11 @@ console.log("this is rendering page")
         // data={chapters}
         data={filterChaptersBySection(section)}
         keyExtractor={(item) => item.id}
+        style={styles.liststyle}
         renderItem={({ item }) => (
-          <TouchableOpacity style={
-            [styles.chapter]
-            } onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id,language: language })}>
+          <TouchableOpacity 
+          style={[styles.chapter]} 
+          onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id,language: language })}>
             <Text style={[styles.chapterText,
               item.parent_chapter == null ? styles.ListTitle : styles.subchapter
             ]}>
@@ -150,7 +141,6 @@ console.log("this is rendering page")
         </View>
     </Modal>
     </View>
-    </SafeAreaView>
     </AppLayout>
   );
 };
@@ -160,7 +150,8 @@ const styles = StyleSheet.create({
   scontainer: { flex: 1, padding: 5, backgroundColor: 'skyblue' },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10,marginTop:0, textAlign: 'center' },
   chapter: 
-  { padding: 8, 
+  { paddingTop: 0, 
+    padding: 10,
     marginVertical: 0, 
     borderRadius: 0, 
     borderTopWidth: 0.2, 
@@ -182,7 +173,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   chapterText: { fontSize: 18, textTransform: 'capitalize' },
-  liststyle: { flex: 1, padding: 5, backgroundColor: 'skyblue' },
+  liststyle: { marginBottom: 50 },
   item: {
     backgroundColor: '#f9c2ff',
     padding: 20,

@@ -24,34 +24,64 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-		<!-- ✅ File Sharing Keys (must be top-level) -->
+	
+	<!-- ✅ File Sharing Keys -->
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
-	<!-- end for file sharing -->
+	
+	<!-- ✅ Fixed App Transport Security Configuration -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
-	  <!-- Do not change NSAllowsArbitraryLoads to true, or you will risk app rejection! -->
+		<!-- Keep this false for production security -->
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
+		
 		<key>NSExceptionDomains</key>
-    	<dict>
-      		<key>shepherd-s-staff.web.app</key>
-      		<dict>
-        		<key>NSExceptionMinimumTLSVersion</key>
-        		<string>TLSv1.2</string>
-        		<key>NSIncludesSubdomains</key>
-        		<true/>
+		<dict>
+			<!-- Firebase Hosting Domain -->
+			<key>shepherd-s-staff.web.app</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<!-- REMOVED: NSExceptionAllowsInsecureHTTPLoads - Firebase uses HTTPS -->
 				<key>NSExceptionRequiresForwardSecrecy</key>
-      			<false/>
+				<false/>
 				<key>NSRequiresCertificateTransparency</key>
-      			<false/>
-      		</dict>
+				<false/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+			</dict>
+			
+			<!-- Add Firebase's other domains that might be accessed -->
+			<key>firebaseapp.com</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+				<key>NSRequiresCertificateTransparency</key>
+				<false/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+			</dict>
+			
+			<!-- Google's CDN domains (sometimes used by Firebase) -->
+			<key>googleapis.com</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+				<key>NSRequiresCertificateTransparency</key>
+				<false/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+			</dict>
 		</dict>
 	</dict>
+
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
 	<key>UILaunchStoryboardName</key>
