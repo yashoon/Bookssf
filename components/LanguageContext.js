@@ -7,16 +7,17 @@ const STORAGE_KEYS = {
 };
 
 // Default configuration
-const DEFAULT_LANGUAGE = 'english';
+const DEFAULT_LANGUAGE = null; // Set to null to indicate no default language
 const SUPPORTED_LANGUAGES = ['english', 'telugu', 'nepali', 'de', 'it', 'pt', 'zh', 'ja', 'ko', 'ar'];
 
 // Create the context
 export const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
+  const [language, setLanguage] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isFirstTime, setIsFirstTime] = useState(false); // Set to true when no valid language is found
 
   // Load language from storage when app starts
   useEffect(() => {
@@ -29,17 +30,32 @@ export const LanguageProvider = ({ children }) => {
         
         if (storedLang && SUPPORTED_LANGUAGES.includes(storedLang)) {
           setLanguage(storedLang);
+          setIsFirstTime(false);
+          console.log(`Loaded existing language: ${storedLang}`);
         } else {
           // If stored language is invalid or doesn't exist, set default
-          setLanguage(DEFAULT_LANGUAGE);
+          // setLanguage(DEFAULT_LANGUAGE);
+          setLanguage(null);
+          setIsFirstTime(true);
+          console.log('No language set - first time user or invalid language');
           
+
+          // Clear any invalid data
+          if (storedLang) {
+            await AsyncStorage.removeItem(STORAGE_KEYS.SELECTED_LANGUAGE);
+            console.log('Cleared invalid language data:', storedLang);
+          }
           // Save default to storage for consistency
-          await AsyncStorage.setItem(STORAGE_KEYS.SELECTED_LANGUAGE, DEFAULT_LANGUAGE);
+          // await AsyncStorage.setItem(STORAGE_KEYS.SELECTED_LANGUAGE, DEFAULT_LANGUAGE);
         }
       } catch (e) {
+        // console.error('Failed to load language from storage:', e);
+        // setError('Failed to load language settings');
+        // setLanguage(DEFAULT_LANGUAGE); // Fallback to default
         console.error('Failed to load language from storage:', e);
         setError('Failed to load language settings');
-        setLanguage(DEFAULT_LANGUAGE); // Fallback to default
+        setLanguage(null);
+        setIsFirstTime(true);
       } finally {
         setIsLoading(false);
       }
@@ -52,8 +68,8 @@ export const LanguageProvider = ({ children }) => {
   const changeLanguage = async (newLanguage) => {
     // Validate the language
     if (!SUPPORTED_LANGUAGES.includes(newLanguage)) {
-      console.warn(`Unsupported language: ${newLanguage}. Using default: ${DEFAULT_LANGUAGE}`);
-      newLanguage = DEFAULT_LANGUAGE;
+      console.warn(`Unsupported language: ${newLanguage}. Supported: ${SUPPORTED_LANGUAGES.join(', ')}`);
+      throw new Error(`Unsupported language: ${newLanguage}`);
     }
 
     try {
@@ -64,27 +80,38 @@ export const LanguageProvider = ({ children }) => {
       
       // Update state
       setLanguage(newLanguage);
+      setIsFirstTime(false); // No longer first time after setting language
       
       console.log(`Language changed to: ${newLanguage}`);
     } catch (e) {
       console.error('Failed to save language:', e);
       setError('Failed to save language settings');
-      
+      throw e; // Re-throw so calling code can handle it
       // Still update the state even if storage fails
-      setLanguage(newLanguage);
+      // setLanguage(newLanguage);
     }
   };
 
   // Reset language to default
   const resetLanguage = async () => {
-    await changeLanguage(DEFAULT_LANGUAGE);
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEYS.SELECTED_LANGUAGE);
+      setLanguage(null);
+      setIsFirstTime(true);
+      setError(null);
+      console.log('Language reset - user will need to select again');
+    } catch (e) {
+      console.error('Failed to reset language:', e);
+      setError('Failed to reset language');
+    }
   };
 
   // Clear all language data
   const clearLanguageData = async () => {
     try {
       await AsyncStorage.removeItem(STORAGE_KEYS.SELECTED_LANGUAGE);
-      setLanguage(DEFAULT_LANGUAGE);
+      setLanguage(null);
+      setIsFirstTime(true);
       setError(null);
       console.log('Language data cleared');
     } catch (e) {
@@ -94,19 +121,21 @@ export const LanguageProvider = ({ children }) => {
   };
 
   // Get language info
-  const getLanguageInfo = () => {
-    const languageNames = {
-      en: 'English',
-      es: 'Español',
-      fr: 'Français',
-      de: 'Deutsch',
-      it: 'Italiano',
-      pt: 'Português',
-      zh: '中文',
-      ja: '日本語',
-      ko: '한국어',
-      ar: 'العربية'
-    };
+    // Get language info
+    const getLanguageInfo = () => {
+      if (!language) {
+        return {
+          code: null,
+          name: 'No language selected',
+          isRTL: false
+        };
+      }
+  
+      const languageNames = {
+        english: 'English',
+        nepali: 'नेपाली', // Nepali in Devanagari
+        telugu: 'తెలుగు'  // Telugu in Telugu script
+      };
 
     return {
       code: language,
@@ -120,6 +149,7 @@ export const LanguageProvider = ({ children }) => {
     language,
     isLoading,
     error,
+    isFirstTime,
     
     // Actions
     setLanguage: changeLanguage,
@@ -129,10 +159,12 @@ export const LanguageProvider = ({ children }) => {
     // Utilities
     getLanguageInfo,
     supportedLanguages: SUPPORTED_LANGUAGES,
-    defaultLanguage: DEFAULT_LANGUAGE,
+    // defaultLanguage: DEFAULT_LANGUAGE,
     
-    // Helper function to check if language is supported
-    isLanguageSupported: (lang) => SUPPORTED_LANGUAGES.includes(lang)
+    // Helper functions
+    isLanguageSupported: (lang) => SUPPORTED_LANGUAGES.includes(lang),
+    hasLanguageSet: !!language, // Boolean helper - true if language is set
+    needsLanguageSelection: !language && !isLoading, // Helper for navigation logic
   };
 
   return (
@@ -166,4 +198,23 @@ export const useTranslations = (translations) => {
   const { language } = useLanguage();
   
   return translations[language] || translations[DEFAULT_LANGUAGE] || {};
+};
+// Hook for automatic language navigation detection
+export const useLanguageNavigation = () => {
+  const { 
+    language, 
+    isLoading, 
+    isFirstTime, 
+    hasLanguageSet, 
+    needsLanguageSelection 
+  } = useLanguage();
+
+  return {
+    language,
+    isLoading,
+    isFirstTime,
+    hasLanguageSet,
+    needsLanguageSelection,
+    shouldRedirectToLanguageSelector: needsLanguageSelection
+  };
 };

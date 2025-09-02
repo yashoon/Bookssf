@@ -12,7 +12,7 @@ import { use } from 'i18next';
 const ChapterListScreen = ({ navigation, route }) => {
   // const { t } = useTranslation();
   
-  const { section = 1, language : paramLang  } = route.params || {};
+  const { section = 1  } = route.params || {};
   console.log("This is chapter list screen: " + section)
 //   const { i18n } = useTranslation();
   const [chapters, setChapters] =  useState([]);
