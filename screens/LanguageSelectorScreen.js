@@ -4,14 +4,16 @@ import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
 import { useLanguage } from '../components/LanguageContext';
+import RNFS from 'react-native-fs';
 import { checkDatabaseExists } from '../database/Database'; // Import your DB check function
+
 // import RNFS from 'react-native-fs'; // If you're using RNFS for file checking
 
 const LANGUAGE_OPTIONS = [
   { label: 'English', value: 'english' },
   { label: 'Nepali', value: 'nepali' },
-  { label: 'Telugu', value: 'telugu' },
-  // Add more as needed
+  // { label: 'Telugu', value: 'telugu' },
+  // Add more as needed 
 ];
 
 export default function LanguageSelectorScreen({ navigation }) {
@@ -73,14 +75,16 @@ export default function LanguageSelectorScreen({ navigation }) {
   // Function to check if database file exists for a language
   const checkFileExists = async (languageCode) => {
     try {
-      // Option 1: If you have a custom function to check DB existence
-      const exists = await checkDatabaseExists(languageCode);
-      return exists;
+      // // Option 1: If you have a custom function to check DB existence
+      // const exists = await checkDatabaseExists(languageCode);
+      // return exists;
 
       // Option 2: If you're using RNFS to check file system
-      // const dbPath = `${RNFS.DocumentDirectoryPath}/database_${languageCode}.db`;
-      // const exists = await RNFS.exists(dbPath);
-      // return exists;
+      const dbPath = `${RNFS.DocumentDirectoryPath}/${languageCode}.db`;
+      const exists = await RNFS.exists(dbPath);
+      console.log(`Database file for ${languageCode} exists:`, exists);
+      console.log('Checked path:', dbPath);
+      return exists;
 
       // Option 3: If you're using AsyncStorage to track downloads
       // const downloaded = await AsyncStorage.getItem(`db_downloaded_${languageCode}`);
