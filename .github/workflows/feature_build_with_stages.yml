@@ -60,7 +60,10 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: 🏗️ Build Release APK
-        run: cd android && ./gradlew assembleRelease --parallel
+        run: cd android && ./gradlew assembleRelease --parallel --no-daemon --build-cache
+
+      - name: 🏗️ Build Release APK
+        run: cd android && ./gradlew bundleRelease --parallel --no-daemon --build-cache
 
       - name: 💾 Upload APK Artifact
         uses: actions/upload-artifact@v4
