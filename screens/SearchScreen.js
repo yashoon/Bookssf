@@ -6,7 +6,7 @@ import { getDBConnection_local, getPreDBConnection, getUsers } from '../database
 import { useNavigation } from '@react-navigation/native';
 import AppLayout from '../components/AppLayout';
 import { useLanguage } from '../components/LanguageContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RenderHTML } from 'react-native-render-html';
 
 const SearchScreen = () => {
   const [query, setQuery] = useState('');
@@ -115,7 +115,7 @@ const SearchScreen = () => {
     if (index === -1) return text.slice(0, 100) + '...';
 
     const start = Math.max(0, index - 40);
-    const end = Math.min(text.length, index + 60);
+    const end = Math.min(text.length, index + 250);
 
     return text.slice(start, end) + '...';
   };
@@ -158,7 +158,8 @@ const SearchScreen = () => {
                     onPress={() => navigation.navigate('ChapterContent', { chapterId: item.id, language: language})}
                 >
                     <Text style={styles.chapterTitle}>Chapter {item.id}</Text>
-                    <Text style={styles.snippet}>{getSnippet(stripHtml(item.content), query)}</Text>
+                    {/* <Text style={styles.snippet}>{getSnippet(stripHtml(item.content), query)}</Text> */}
+                    <RenderHTML contentWidth={10} source={{ html: getSnippet(stripHtml(item.content), query) }} />
                 </TouchableOpacity>
                 )}
                 ListEmptyComponent={() => (
