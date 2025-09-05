@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
 import { useLanguage } from '../components/LanguageContext';
 import RNFS from 'react-native-fs';
-import { checkDatabaseExists } from '../database/Database'; // Import your DB check function
+import { getDBConnection_local } from '../database/Database';
 
 // import RNFS from 'react-native-fs'; // If you're using RNFS for file checking
 
@@ -37,6 +37,7 @@ export default function LanguageSelectorScreen({ navigation }) {
       const exists = await checkFileExists(languageLowerCase);
       
       if (!exists && !isFirstTime) {
+        console.log("Database does not exist for: " + exists);
         Alert.alert(
           'Database Not Found', 
           `The ${selectedLanguage} database is not downloaded. Do you want to download it now?`,
@@ -108,6 +109,7 @@ export default function LanguageSelectorScreen({ navigation }) {
       // await downloadDatabaseFile(languageCode);
       
       // For now, simulate download
+      await getDBConnection_local(languageCode);
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       setDownloadStatus(prev => ({
