@@ -70,6 +70,12 @@ jobs:
         with:
           name: release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
+      
+      - name: 💾 Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
 
   notify_discord:
     needs: build_apk
