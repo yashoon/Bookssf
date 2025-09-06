@@ -1,25 +1,27 @@
-import React, {useState, useEffect, useRef, useMemo} from 'react';
+import React, {useState, useEffect, useRef, useMemo, useCallback} from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { getPreDBConnection, getUsers, getMaxChapterId } from '../database/Database';
-import RenderHTML from 'react-native-render-html';
+import { getPreDBConnection, getUsers, getMaxChapterId, getDBConnection_local } from '../database/Database';
 import { useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
 import { WebView } from 'react-native-webview';
 import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useLanguage } from '../components/LanguageContext';
 
 const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslateY }) => {
 
-  const { chapterId } = route.params;
+  const { chapterId = 1, language : paramLang } = route.params || {};
+  
   const { width } = useWindowDimensions();
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
+  // const [language, setLanguage] = useState(paramLang); // ✅ Direct initialization instead of null
   const [currentChapterId, setCurrentChapterId] = useState(chapterId);
   const [maxChapterId, setMaxChapterId] = useState(0);
   const { fontSize, increaseFont, decreaseFont } = useFontSize();
-  const webViewRef = useRef(null); // create a ref for the WebView
+  const webViewRef = useRef(null);
   const [showUI, setShowUI] = useState(true);
   const scrollOffset = useRef(0);
   const lastScrollY = useRef(0);
@@ -27,80 +29,73 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
   const SCROLL_DEBOUNCE_MS = 300;
   const MIN_SCROLL_DELTA = 15;
   const tabBarHeight = useBottomTabBarHeight();
+  const { language, isLoading: isLanguageLoading } = useLanguage();
 
+  // ✅ Memoize contentMap properly - prevents recreation on every render
+  const contentMap = useMemo(() => {
+    if (!contents.length) return {};
+    const obj = {};
+    contents.forEach(item => {
+      obj[item.id] = item;
+    });
+    return obj;
+  }, [contents]);
 
-  
-  const updateFontSizeInWebView = (fontSize) => {
-    const jsCode = `
-      //  document.body.style.backgroundColor = 'lightyellow';
-      document.body.style.fontSize = '${fontSize}px';
-      true; // note: this is required for the webview to work properly
-    `;
-    webViewRef.current?.injectJavaScript(jsCode);
-  };
-
-  //this is for changing font size
-  const injectedJavaScript = `
+  // ✅ Memoize injected JavaScript to prevent WebView reloads
+  const injectedJavaScript = useMemo(() => `
     const style = document.createElement('style');
     style.innerHTML = 'html { font-size: ${fontSize}px;transition: none; }';
     document.head.appendChild(style);
-    true; // Required to indicate successful injection
-  `;
+    true;
+  `, [fontSize]);
 
-  // this is for sending the scroll position to the app
-  const injectedJS = `
-  window.addEventListener('scroll', () => {
-    window.ReactNativeWebView.postMessage(window.scrollY.toString());
-  });
-  true;
-`;
+  const injectedJS = useMemo(() => `
+    window.addEventListener('scroll', () => {
+      window.ReactNativeWebView.postMessage(window.scrollY.toString());
+    });
+    true;
+  `, []); // No dependencies since this script doesn't change
 
-  const handleLoadEnd = () => {
-    if (webViewRef.current) {
-      webViewRef.current.injectJavaScript(injectedJavaScript);
-    }
-  };
+  // ✅ Memoize functions to prevent recreating on every render
+  const updateFontSizeInWebView = useCallback((fontSize) => {
+    const jsCode = `
+      document.body.style.fontSize = '${fontSize}px';
+      true;
+    `;
+    webViewRef.current?.injectJavaScript(jsCode);
+  }, []); // No fontSize dependency - it's passed as parameter
 
-  const goToChapter = async (chapterId) => {
+  const saveLastReadChapter = useCallback(async (chapterId) => {
     try {
-      console.log("saving in async from next and previous buttons " + chapterId);
-      await saveLastReadChapter(chapterId);
-    } catch (e) {
-      console.log('Error during save:', e);
-      // Optionally show a toast or fallback
-    }
-    navigation.navigate('ChapterContent', { chapterId });
-  };
-
-  const saveLastReadChapter = async (chapterId) => {
-    try {
-      console.log("this is Async saving chapterId" + chapterId)
+      console.log("saving chapterId: " + chapterId);
       await AsyncStorage.setItem('lastReadChapter', chapterId.toString());
     } catch (e) {
       console.log('Error saving last read chapter:', e);
     }
-  };
+  }, []);
 
-  function getContents(chapterId){
-    console.log("this is changing text")
-    return null;
-  };
+  const goToChapter = useCallback(async (chapterId) => {
+    try {
+      console.log("navigating to chapter: " + chapterId);
+      await saveLastReadChapter(chapterId);
+    } catch (e) {
+      console.log('Error during save:', e);
+    }
+    navigation.navigate('ChapterContent', { chapterId, language });
+  }, [navigation, language, saveLastReadChapter]);
 
-  const toggleUI = (visible) => {
-    console.log("this is toggling UI: " + visible);
-    // Call the function passed from the tab navigator
+  const toggleUI = useCallback((visible) => {
+    console.log("toggling UI: " + visible);
     if (toggleTabBar) {
       toggleTabBar(visible);
     }
     setShowUI(visible);
     navigation.setOptions({
       headerShown: false
-      // Remove tabBarStyle because it doesn't work this way with bottom tabs
-      // tabBarStyle: visible ? undefined : { display: 'none' },
     });
-  };
+  }, [toggleTabBar, navigation]);
 
-  const handleWebViewMessage = (event) => {
+  const handleWebViewMessage = useCallback((event) => {
     const scrollY = Number(event.nativeEvent.data);
     const now = Date.now();
     const delta = scrollY - lastScrollY.current;
@@ -110,182 +105,141 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
     }
 
     if (delta > 0) {
-      // Scrolling down
-      // setShowUI(false);
       toggleUI(false);
     } else {
-      // Scrolling up
-      // setShowUI(true);
       toggleUI(true);
     }
 
     lastScrollY.current = scrollY;
     lastToggleTime.current = now;
-  };
+  }, [toggleUI]);
 
-  const handleTap = () => {
+  const handleLoadEnd = useCallback(() => {
+    if (webViewRef.current) {
+      webViewRef.current.injectJavaScript(injectedJavaScript);
+    }
+  }, [injectedJavaScript]);
+
+  const handleTap = useCallback(() => {
     if (!showUI) toggleUI(true);
-  };
+  }, [showUI, toggleUI]);
 
-  console.log("before effect");
-  useEffect(() => { 
-    getPreDBConnection().then((db) => {
-        getUsers(db, 'contents').then((users) => {
-            console.log("This is content List::::::: " + users)
-            setContents(users);
-            // Convert array to object
-            users.forEach(item => {
-              contentMap[item.id] = item;
-            });
-            console.log("This is Content List::::::: " + users)
-            setLoading(false);
-        }, (error) => {
-          console.log("This is error::::::: " + error)
-          // setLoading(true);
-        }
-      );
-        getMaxChapterId(db, 'contents').then((maxId) => {
-          // console.log('Max chapter ID:', maxId);
-          setMaxChapterId(maxId);
-        });
-    });
+  // ✅ Separate useEffect for language initialization - prevents unnecessary re-runs
+  // useEffect(() => {
+  //   if (paramLang && paramLang !== language) {
+  //     setLanguage(paramLang);
+  //   }
+  // }, [paramLang]); // Only depend on paramLang, not language to avoid loops
+
+  // ✅ Main data loading effect - only run when language changes
+  useEffect(() => {
+    if (!language) return;
+
+    console.log("Loading data for language: " + language);
+    setLoading(true);
     
-
-    //getting Max Chapter ID
-    getMaxChapterId().then((maxId) => {
-      console.log('Max chapter ID:', maxId);
-    });
-    //getting Max Chapter ID
-
-    //update font size
-    updateFontSizeInWebView(fontSize);
-
-    console.log('tab bar height:', tabBarHeight);
-    setCurrentChapterId(chapterId);
-
-  // }, [chapterId? chapterId : 1, fontSize, navigation, maxChapterId]);
-  }, [fontSize, maxChapterId]);
-    console.log("after effect -----" + contents[chapterId]?.content);
-
-  // Sync chapterId from route
-useEffect(() => {
-  console.log("this is chapterId from route" + route.params.chapterId)
-  setCurrentChapterId(route.params.chapterId);
-  try {
-    console.log("saving in async from next and previous buttons " + chapterId);
-     saveLastReadChapter(chapterId);
-  } catch (e) {
-    console.log('Error during save:', e);
-    // Optionally show a toast or fallback
-  }
-}, [route.params.chapterId]);
-
-// for animating the nav buttons
-// const buttonBottom = tabBarTranslateY.interpolate({
-//   inputRange: [0, 100],  // tab visible (0) -> hidden (100)
-//   outputRange: [tabBarHeight + 10, 30],
-//   extrapolate: 'clamp',
-// });
-// const navOpacity = tabBarTranslateY.interpolate({
-//   inputRange: [0, 100],
-//   outputRange: [1, 0], // fully visible → fully transparent
-//   extrapolate: 'clamp',
-// });
-
-  const contentMap = useMemo(() => {
-      const obj = {};
-      contents.forEach(item => {
-        obj[item.id] = item;
+    // Use Promise.all for better performance and error handling
+    getDBConnection_local(language).then((db) => {
+      Promise.all([
+        getUsers(db, 'contents'),
+        getMaxChapterId(db, 'contents')
+      ]).then(([users, maxId]) => {
+        console.log("Loaded users count: " + users.length);
+        setContents(users);
+        setMaxChapterId(maxId);
+        setLoading(false);
+      }).catch((error) => {
+        console.log("Database error: " + error);
+        setLoading(false);
       });
-      return obj;
-    }, [contents]);
+    });
+
+  }, [language, isLanguageLoading]); // ✅ Only depend on language - prevents unnecessary database calls
+
+  // ✅ Separate effect for font size updates - prevents mixing concerns
+  useEffect(() => {
+    updateFontSizeInWebView(fontSize);
+  }, [fontSize, updateFontSizeInWebView]);
+
+  // ✅ Separate effect for chapter ID changes - cleaner separation of concerns
+  useEffect(() => {
+    console.log("Chapter ID changed to: " + chapterId);
+    setCurrentChapterId(chapterId);
+    saveLastReadChapter(chapterId);
+  }, [chapterId, saveLastReadChapter]);
+
+  // ✅ Memoize WebView HTML content - prevents unnecessary WebView reloads
+  const webViewHTML = useMemo(() => {
+    const content = contentMap[chapterId]?.content || '';
+    return `<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body>${content}<div style="height:50;"></div></body></html>`;
+  }, [contentMap, chapterId]);
 
   return (
-    // <FontSizeProvider>
     <AppLayout
-    fontSize={fontSize}
-    increaseFont={increaseFont}
-    decreaseFont={decreaseFont}
-    showFontControls={true}
-    showAppLayout={showUI}
+      fontSize={fontSize}
+      increaseFont={increaseFont}
+      decreaseFont={decreaseFont}
+      showFontControls={true}
+      showAppLayout={showUI}
     >
-    {/* <SafeAreaView style={styles.container}> */}
-    
-  <View style={{ flex: 1 }}>
-    <View style={styles.container}>
-      {
-      loading || (typeof contentMap[chapterId]?.content === "undefined") ? (
-        
-        <View style={{ alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="blue" />
-          <Text style={{ marginTop: 10, fontSize: 18, color: 'gray' }}>
-            No content found ...
-          </Text>
-        </View>
-      ) : 
-      (
-      // <TouchableWithoutFeedback onPress={handleTap}>
       <View style={{ flex: 1 }}>
-      <WebView
-        ref={webViewRef}
-        originWhitelist={['*']}
-        source={{ html: `<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body>${contentMap[chapterId]?.content}<div style="height:50;"></div></body></html>` }}
-        style={{flex: 1,paddingBottom: 50}}
-        injectedJavaScript={injectedJS}
-        javaScriptEnabled={true}
-        onLoadEnd={handleLoadEnd}
-        scrollEventThrottle={16}
-        onMessage={handleWebViewMessage}
-      />
+        <View style={styles.container}>
+          {loading || !contentMap[chapterId]?.content ? (
+            <View style={{ alignItems: 'center' }}>
+              <ActivityIndicator size="large" color="green" />
+              <Text style={{ marginTop: 10, fontSize: 18, color: 'gray' }}>
+                Loading content...
+              </Text>
+            </View>
+          ) : (
+            <View style={{ flex: 1 }}>
+              <WebView
+                ref={webViewRef}
+                originWhitelist={['*']}
+                source={{ html: webViewHTML }}
+                style={{flex: 1, paddingBottom: 50}}
+                injectedJavaScript={injectedJS}
+                javaScriptEnabled={true}
+                onLoadEnd={handleLoadEnd}
+                scrollEventThrottle={16}
+                onMessage={handleWebViewMessage}
+              />
+            </View>
+          )}
+        </View>
       </View>
-      // </TouchableWithoutFeedback>
-      )
-      }
-      
-    </View>
-    {/* </ScrollView> */}
-    </View>
 
-    {/* adding buttons for chapter navigation */}
+      <Animated.View
+        style={[
+          styles.navContainer,
+          {
+            transform: [{
+              translateY: tabBarTranslateY.interpolate({
+                inputRange: [0, 100],
+                outputRange: [0, tabBarHeight],
+                extrapolate: 'clamp',
+              }),
+            }],
+            bottom: tabBarHeight + 20,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={() => goToChapter(currentChapterId - 1)}
+          disabled={currentChapterId <= 1}
+          style={[styles.circleButton, currentChapterId <= 1 && styles.disabledButton]}>
+          <Text style={styles.arrowText}>‹</Text>
+        </TouchableOpacity>
 
-{/* <View style={styles.navContainer} contentContainerStyle={{ paddingBottom: tabBarHeight }}> */}
+        <TouchableOpacity
+          onPress={() => goToChapter(currentChapterId + 1)}
+          disabled={currentChapterId >= maxChapterId}
+          style={[styles.circleButton, currentChapterId >= maxChapterId && styles.disabledButton]}>
+          <Text style={styles.arrowText}>›</Text>
+        </TouchableOpacity>
+      </Animated.View>
 
-{/* <View style={[styles.navContainer, { bottom: showUI ? tabBarHeight + 10 : 30 }]}> */}
-<Animated.View
-  style={[
-    styles.navContainer,
-    {
-      transform: [{
-        translateY: tabBarTranslateY.interpolate({
-          inputRange: [0, 100],
-          outputRange: [0, tabBarHeight], // move down when tab hides
-          extrapolate: 'clamp',
-        }),
-      }],
-      // opacity: navOpacity, // 🔥 Fade in/out
-      bottom: tabBarHeight + 20, // ✅ dynamic bottom padding
-    },
-  ]}
->
-  <TouchableOpacity
-    onPress={() => goToChapter(currentChapterId - 1)}
-    disabled={currentChapterId <= 1}
-    style={[styles.circleButton, currentChapterId <= 1 && styles.disabledButton]}>
-    <Text style={styles.arrowText}>‹</Text>
-  </TouchableOpacity>
-
-  <TouchableOpacity
-    onPress={() => goToChapter(currentChapterId + 1)}
-    disabled={currentChapterId >= maxChapterId}
-    style={[styles.circleButton, currentChapterId >= maxChapterId && styles.disabledButton]}>
-    {/* <Text style={styles.navText}>Next →</Text> */}
-    <Text style={styles.arrowText}>›</Text>
-  </TouchableOpacity>
-</Animated.View>
-
-    {/* </SafeAreaView> */}
     </AppLayout>
-    // </FontSizeProvider>
   );
 };
 
@@ -297,8 +251,7 @@ const styles = StyleSheet.create({
   webview: {
     flex: 1,
     borderWidth: 2,
-    borderColor: 'red', // to see if it's rendering at all
-    // height: 500,
+    borderColor: 'red',
   },
   controls: {
     flexDirection: 'row',
@@ -338,13 +291,12 @@ const styles = StyleSheet.create({
   },
   navContainer: {
     position: 'absolute', 
-    // bottom: 100, 
     left: 20, 
     right: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    zIndex: 50, // <- higher than tab bar (which you had at zIndex: 10)
-    elevation: 10, // <- for Android
+    zIndex: 50,
+    elevation: 10,
   },
   circleButton: {
     width: 50,

@@ -1,5 +1,6 @@
 import SQLite from 'react-native-sqlite-storage';
 import { ensureDatabaseExists } from './firebaseDBManager';
+import RNFS from 'react-native-fs';
 
 // Enable debugging
 SQLite.enablePromise(true);
@@ -16,15 +17,24 @@ export const getDBConnection = async () => {
 
 // getting database form firebase
 
-export const getDBConnection_local = async (language = 'english') => {
+export const getDBConnection_local = async (language) => {
+  console.log('language name from database.js: ' + language);
+  
   const dbPath = await ensureDatabaseExists(language);
+  console.log('Database path:', dbPath);
+  const dbName = `${language}.db`;
 
   return SQLite.openDatabase(
-    {
-      name: `${language}.db`,
-      location: 'default',
-      createFromLocation: dbPath, // optional for Android, ignored on iOS
-    },
+    Platform.OS === 'ios'
+    ? {
+        name: dbName,
+        // location: 'Documents', // iOS needs this
+        // location: 'Library', // iOS needs this
+      }
+    : {
+        name: dbPath, // Use the full path for Android
+        // location: 'default', // Android handles from DocumentDirectoryPath
+      },
     () => console.log('✅ Opened database for', language),
     error => console.error('❌ DB Open error:', error)
   );
@@ -36,15 +46,6 @@ export const getDBConnection_local = async (language = 'english') => {
 
 export const getPreDBConnection = async () => {
   console.log('Opening database ...');
-  // opening a pre-populated database in the app bundle (best scenario) 
-  //createFromLocation: 1 is the key to open the pre-populated database
-  //createFromLocation: 0 is the key to open the empty database
-  //createFromLocation: 2 is the key to open the pre-populated database in the documents directory
-  //location: 'Library' is the key to open the pre-populated database in the Library directory
-  //location: 'Documents' is the key to open the pre-populated database in the Documents directory
-  //location: 'Shared' is the key to open the pre-populated database in the Shared directory
-  //location: 'Data' is the key to open the pre-populated database in the Data directory
-  //location: 'Library' is the key to open the pre-populated database in the Library directory
   //https://shepherd-s-staff.web.app/databases/SSF.db
   return SQLite.openDatabase({ name: "SSF", location: "Library" , createFromLocation: "~SSF.db",},
     () => console.log('✅ Preloaded Database opened successfully ...'),
@@ -89,7 +90,7 @@ try {
 
 export const getUsers = async (db, table) => {
 
-  console.log('Fetching users ...');
+  console.log('Fetching users ...' + db);
   return new Promise(resolve => {
   db.transaction(tx => {
     tx.executeSql(
@@ -100,9 +101,9 @@ export const getUsers = async (db, table) => {
         let users = [];
         for (let i = 0; i < results.rows.length; i++) {
           users.push(results.rows.item(i));
-          console.log(i);
+          // console.log(i);
         }
-        console.log('✅ Users fetched:', users);
+        // console.log('✅ Users fetched:', users);
          resolve(users);
       },
       error => console.error('Error fetching users:', error)
