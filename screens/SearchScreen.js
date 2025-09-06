@@ -1,6 +1,6 @@
 // screens/SearchScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, FlatList, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TextInput, FlatList, TouchableOpacity, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getDBConnection_local, getPreDBConnection, getUsers } from '../database/Database';
 import { useNavigation } from '@react-navigation/native';
@@ -10,6 +10,7 @@ import { RenderHTML } from 'react-native-render-html';
 
 const SearchScreen = () => {
   const [query, setQuery] = useState('');
+  const { width } = useWindowDimensions();
   const [allChapters, setAllChapters] = useState([]);
   const [filteredChapters, setFilteredChapters] = useState([]);
   const [isLoadingChapters, setIsLoadingChapters] = useState(false);
@@ -159,7 +160,7 @@ const SearchScreen = () => {
                 >
                     <Text style={styles.chapterTitle}>Chapter {item.id}</Text>
                     {/* <Text style={styles.snippet}>{getSnippet(stripHtml(item.content), query)}</Text> */}
-                    <RenderHTML contentWidth={10} source={{ html: getSnippet(stripHtml(item.content), query) }} />
+                    <RenderHTML contentWidth={width} source={{ html: getSnippet(stripHtml(item.content), query) }} />
                 </TouchableOpacity>
                 )}
                 ListEmptyComponent={() => (

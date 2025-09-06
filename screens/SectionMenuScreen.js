@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   sectionText: {
     fontSize: 18,
-    textAlign: 'left',
+    textAlign: 'center',
     color: '#333',
     fontWeight: '500',
   },
