@@ -62,7 +62,7 @@ jobs:
       - name: 🏗️ Build Release APK
         run: cd android && ./gradlew assembleRelease --parallel --no-daemon --build-cache
 
-      - name: 🏗️ Build Release APK
+      - name: 🏗️ Build Bundle APK
         run: cd android && ./gradlew bundleRelease --parallel --no-daemon --build-cache
 
       - name: 💾 Upload APK Artifact
