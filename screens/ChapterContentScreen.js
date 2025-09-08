@@ -179,7 +179,7 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
       fontSize={fontSize}
       increaseFont={increaseFont}
       decreaseFont={decreaseFont}
-      showFontControls={true}
+      showFontControls={false}
       showAppLayout={showUI}
     >
       <View style={{ flex: 1 }}>
