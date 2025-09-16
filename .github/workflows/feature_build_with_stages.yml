@@ -84,7 +84,7 @@ jobs:
           packageName: com.bookssf
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           track: alpha   # 👈 Uploads to Closed Testing track
-          userFraction: 1.0
+          userFraction: 0.5  # 👈 50% rollout
           status: completed
 
   notify_discord:
