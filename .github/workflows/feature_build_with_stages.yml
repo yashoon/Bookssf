@@ -59,8 +59,8 @@ jobs:
       - name: 🛠️ Make gradlew Executable
         run: chmod +x android/gradlew
 
-      - name: 🏗️ Build Release APK
-        run: cd android && ./gradlew assembleRelease --parallel --no-daemon --build-cache
+      # - name: 🏗️ Build Release APK
+      #   run: cd android && ./gradlew assembleRelease --parallel --no-daemon --build-cache
 
       - name: 🏗️ Build Bundle APK
         run: cd android && ./gradlew bundleRelease --parallel --no-daemon --build-cache
@@ -96,7 +96,7 @@ jobs:
           status: completed
 
   notify_discord:
-    needs: build_apk
+    needs: [build_apk, Upload_play_store]
     runs-on: ubuntu-latest
     if: always()
 
@@ -104,6 +104,7 @@ jobs:
       - name: 📣 Notify Discord
         run: |
           STATUS="${{ needs.build_apk.result }}"
+          UPLOAD_STATUS="${{ needs.Upload_play_store.result }}"
           if [ "$STATUS" = "success" ]; then
             COLOR="3066993"  # Green
             EMOJI="✅"
@@ -114,12 +115,23 @@ jobs:
             COLOR="8359053"  # Orange
             EMOJI="⚠️"
           fi
+          if [ "$UPLOAD_STATUS" = "success" ]; then
+            U_COLOR="3066993"  # Green
+            U_EMOJI="✅"
+          elif [ "$UPLOAD_STATUS" = "failure" ]; then
+            U_COLOR="15158332"  # Red
+            U_EMOJI="❌"
+          else
+            U_COLOR="8359053"  # Orange
+            U_EMOJI="⚠️"
+          fi
           curl -H "Content-Type: application/json" \
             -X POST -d "{
               \"username\": \"GitHub Actions Bot\",
               \"embeds\": [{
-                \"title\": \"$EMOJI Build $STATUS\",
+                \"title\": \"$EMOJI Build $STATUS - $U_EMOJI Publish $UPLOAD_STATUS\",
                 \"description\": \"Repository: [${{ github.repository }}](https://github.com/${{ github.repository }})\\nBranch: \`${{ github.ref_name }}\`\\nCommit: [View Commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\",
                 \"color\": $COLOR
+                \"color\": $U_COLOR
               }]
             }" ${{ secrets.DISCORD_WEBHOOK_URL }}
