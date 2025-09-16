@@ -65,17 +65,25 @@ jobs:
       - name: 🏗️ Build Bundle APK
         run: cd android && ./gradlew bundleRelease --parallel --no-daemon --build-cache
 
-      - name: 💾 Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+      # - name: 💾 Upload APK Artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: release-apk
+      #     path: android/app/build/outputs/apk/release/app-release.apk
       
       - name: 💾 Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
+  Upload_play_store:
+    needs: build_apk
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download AAB Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-aab
       
       - name: 🚀 Upload to Google Play (Closed Testing)
         uses: r0adkll/upload-google-play@v1
@@ -84,7 +92,7 @@ jobs:
           packageName: com.bookssf
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           track: alpha   # 👈 Uploads to Closed Testing track
-          userFraction: 0.5  # 👈 50% rollout
+          # userFraction: 0.5  # 👈 50% rollout
           status: completed
 
   notify_discord:
