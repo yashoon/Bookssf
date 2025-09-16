@@ -76,6 +76,16 @@ jobs:
         with:
           name: release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
+      
+      - name: 🚀 Upload to Google Play (Closed Testing)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GPLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.bookssf
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: alpha   # 👈 Uploads to Closed Testing track
+          userFraction: 1.0
+          status: completed
 
   notify_discord:
     needs: build_apk
