@@ -202,7 +202,7 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
                 javaScriptEnabled={true}
                 onLoadEnd={handleLoadEnd}
                 scrollEventThrottle={16}
-                onMessage={handleWebViewMessage}
+                // onMessage={handleWebViewMessage}
               />
             </View>
           )}
