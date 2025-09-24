@@ -130,11 +130,28 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
     if (type === 'tap') {
       // Always show UI on tap
       toggleUI(true);
-      return;
+      // return;
     }
-    else if ((delta > 0 || delta < 0) && type === 'scroll') {
+    // else if (type === 'scroll') {
+ 
+    //   console.log("scrolling...." + scrollY);
+    //   if (scrollY < 10) {
+    //     // Always show UI when scrolled to top
+    //     console.log("Scrolled to top, showing UI");
+    //     toggleUI(true);
+    //     // lastScrollY.current = scrollY;
+    //     // lastToggleTime.current = now;
+    //     // return;
+    //   }
+      else if ((delta > 0 || delta < 0) && (type === 'scroll')) {
       toggleUI(false);
-    } 
+      // return;
+      } 
+        // // Hide UI when scrolling down (but not at the top)
+        // else if (delta > 0 && Math.abs(delta) > MIN_SCROLL_DELTA && now - lastToggleTime.current > SCROLL_DEBOUNCE_MS) {
+        //   toggleUI(false);
+        //   lastToggleTime.current = now;
+        // }
     // else if (delta < 0) {
     //   toggleUI(true);
     // }
