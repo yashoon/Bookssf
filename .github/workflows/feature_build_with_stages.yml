@@ -130,9 +130,13 @@ jobs:
             -X POST -d "{
               \"username\": \"GitHub Actions Bot\",
               \"embeds\": [{
-                \"title\": \"$EMOJI Build $STATUS - $U_EMOJI Publish $UPLOAD_STATUS\",
-                \"description\": \"Repository: [${{ github.repository }}](https://github.com/${{ github.repository }})\\nBranch: \`${{ github.ref_name }}\`\\nCommit: [View Commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\",
-                \"color\": $COLOR
-                \"color\": $U_COLOR
-              }]
+            \"title\": \"$EMOJI Build $STATUS\",
+            \"description\": \"Repository: [${{ github.repository }}](https://github.com/${{ github.repository }})\\nBranch: \`${{ github.ref_name }}\`\",
+            \"color\": $COLOR
+          },
+          {
+            \"title\": \"$U_EMOJI Publish $UPLOAD_STATUS\",
+            \"description\": \"Commit: [View Commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\",
+            \"color\": $U_COLOR
+          }]
             }" ${{ secrets.DISCORD_WEBHOOK_URL }}
