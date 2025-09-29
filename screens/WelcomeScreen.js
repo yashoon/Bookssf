@@ -14,10 +14,11 @@ const WelcomeScreen = ({ navigation }) => {
         <Text style={styles.bookMeta}>© World MAP, 1993</Text>
         <Text style={styles.bookMeta}>  All rights reserved.</Text>
         <Text style={styles.bookMeta}></Text>
-        <Text style={styles.publishHouse}>Published By:</Text>
-        <Text style={styles.publishHouse}>World MAP</Text>
-        <Text style={styles.publishHouse}>1419 N. San Fernando Blvd.</Text>
-        <Text style={styles.publishHouse}>Burbank, CA 91504-4194 U.S.A.</Text>
+        <Text style={styles.publishHouse}>Facilitated By:</Text>
+        <Text style={styles.publishHouse}>The True Grace Ministries</Text>
+        <Text style={styles.publishHouse}>www.ttgm.org</Text>
+        <Text style={styles.publishHouse}></Text>
+        <Text style={styles.publishNote}>Note: This App is copy right protected and authorized by the World Map organization.</Text>
       </View>
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Shepherd's Staff")}>
         <Text style={styles.buttonText}>Start Reading</Text>
@@ -83,6 +84,13 @@ const styles = StyleSheet.create({
     color: '#000',
     textAlign: 'center',
     marginTop: 2,
+  },
+  publishNote: {
+    fontSize: 12,
+    color: '#000',
+    textAlign: 'center',
+    marginTop: 2,
+    fontStyle: 'italic',
   },
   publishHouseTitle: {
     fontSize: 14,
