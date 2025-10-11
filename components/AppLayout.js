@@ -27,7 +27,7 @@ export default function AppLayout({ children, fontSize, increaseFont, decreaseFo
   
         // Collapse/expand the height of the header
         Animated.timing(headerHeight, {
-          toValue: showAppLayout ? 80 : 0,  // Set the height to 0 when hiding the header
+          toValue: showAppLayout ? 60 : 0,  // Set the height to 0 when hiding the header
           duration: 300,
           useNativeDriver: false, // We can't animate height with native driver
         }),

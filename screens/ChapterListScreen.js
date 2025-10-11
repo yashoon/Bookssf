@@ -172,8 +172,8 @@ const styles = StyleSheet.create({
     marginVertical: 4,
     fontWeight: 'bold'
   },
-  chapterText: { fontSize: 18, textTransform: 'capitalize' },
-  liststyle: { marginBottom: 50 },
+  chapterText: { fontSize: 18, textTransform: 'capitalize', },
+  liststyle: { marginBottom: 70 },
   item: {
     backgroundColor: '#f9c2ff',
     padding: 20,

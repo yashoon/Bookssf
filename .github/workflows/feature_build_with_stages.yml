@@ -59,26 +59,45 @@ jobs:
       - name: 🛠️ Make gradlew Executable
         run: chmod +x android/gradlew
 
-      - name: 🏗️ Build Release APK
-        run: cd android && ./gradlew assembleRelease --parallel --no-daemon --build-cache
+      # - name: 🏗️ Build Release APK
+      #   run: cd android && ./gradlew assembleRelease --parallel --no-daemon --build-cache
 
-      - name: 🏗️ Build Release APK
+      - name: 🏗️ Build Bundle APK
         run: cd android && ./gradlew bundleRelease --parallel --no-daemon --build-cache
 
-      - name: 💾 Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+      # - name: 💾 Upload APK Artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: release-apk
+      #     path: android/app/build/outputs/apk/release/app-release.apk
       
       - name: 💾 Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
+  Upload_play_store:
+    needs: build_apk
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download AAB Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-aab
+          path: ./release
+      
+      - name: 🚀 Upload to Google Play (Closed Testing)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GPLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.bookssf
+          releaseFiles: ./release/app-release.aab
+          track: alpha   # 👈 Uploads to Closed Testing track
+          # userFraction: 0.5  # 👈 50% rollout
+          status: completed
 
   notify_discord:
-    needs: build_apk
+    needs: [build_apk, Upload_play_store]
     runs-on: ubuntu-latest
     if: always()
 
@@ -86,6 +105,7 @@ jobs:
       - name: 📣 Notify Discord
         run: |
           STATUS="${{ needs.build_apk.result }}"
+          UPLOAD_STATUS="${{ needs.Upload_play_store.result }}"
           if [ "$STATUS" = "success" ]; then
             COLOR="3066993"  # Green
             EMOJI="✅"
@@ -96,12 +116,27 @@ jobs:
             COLOR="8359053"  # Orange
             EMOJI="⚠️"
           fi
+          if [ "$UPLOAD_STATUS" = "success" ]; then
+            U_COLOR="3066993"  # Green
+            U_EMOJI="✅"
+          elif [ "$UPLOAD_STATUS" = "failure" ]; then
+            U_COLOR="15158332"  # Red
+            U_EMOJI="❌"
+          else
+            U_COLOR="8359053"  # Orange
+            U_EMOJI="⚠️"
+          fi
           curl -H "Content-Type: application/json" \
             -X POST -d "{
               \"username\": \"GitHub Actions Bot\",
               \"embeds\": [{
-                \"title\": \"$EMOJI Build $STATUS\",
-                \"description\": \"Repository: [${{ github.repository }}](https://github.com/${{ github.repository }})\\nBranch: \`${{ github.ref_name }}\`\\nCommit: [View Commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\",
-                \"color\": $COLOR
-              }]
+            \"title\": \"$EMOJI Build $STATUS\",
+            \"description\": \"Repository: [${{ github.repository }}](https://github.com/${{ github.repository }})\\nBranch: \`${{ github.ref_name }}\`\",
+            \"color\": $COLOR
+          },
+          {
+            \"title\": \"$U_EMOJI Publish $UPLOAD_STATUS\",
+            \"description\": \"Commit: [View Commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\",
+            \"color\": $U_COLOR
+          }]
             }" ${{ secrets.DISCORD_WEBHOOK_URL }}

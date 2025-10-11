@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useRef, useMemo, useCallback} from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { getPreDBConnection, getUsers, getMaxChapterId, getDBConnection_local } from '../database/Database';
 import { useWindowDimensions } from 'react-native';
@@ -49,12 +49,27 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
     true;
   `, [fontSize]);
 
+  // const injectedJS = useMemo(() => `
+  //   window.addEventListener('scroll', () => {
+  //     window.ReactNativeWebView.postMessage(window.scrollY.toString());
+  //   });
+  //   true;
+  // `, []); // No dependencies since this script doesn't change
+
   const injectedJS = useMemo(() => `
     window.addEventListener('scroll', () => {
-      window.ReactNativeWebView.postMessage(window.scrollY.toString());
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'scroll',
+        scrollY: window.scrollY
+      }));
     });
-    true;
-  `, []); // No dependencies since this script doesn't change
+    
+    window.addEventListener('click', () => {
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'tap'
+      }));
+    });
+`, []);
 
   // ✅ Memoize functions to prevent recreating on every render
   const updateFontSizeInWebView = useCallback((fontSize) => {
@@ -96,19 +111,50 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
   }, [toggleTabBar, navigation]);
 
   const handleWebViewMessage = useCallback((event) => {
-    const scrollY = Number(event.nativeEvent.data);
+    // const scrollY = Number(event.nativeEvent.data);
+    // Alert.alert("Tapped!", event.nativeEvent.data);
+    // added for getting tap events
+    const data = JSON.parse(event.nativeEvent.data);
+    const { type, scrollY } = data;
+    console.log("Message from WebView:", data);
+    // added for getting tap events
+
+
     const now = Date.now();
     const delta = scrollY - lastScrollY.current;
-
+    console.log("DELTA", delta.toString());
     if (Math.abs(delta) < MIN_SCROLL_DELTA || now - lastToggleTime.current < SCROLL_DEBOUNCE_MS) {
       return;
     }
-
-    if (delta > 0) {
-      toggleUI(false);
-    } else {
+ 
+    if (type === 'tap') {
+      // Always show UI on tap
       toggleUI(true);
+      // return;
     }
+    // else if (type === 'scroll') {
+ 
+    //   console.log("scrolling...." + scrollY);
+    //   if (scrollY < 10) {
+    //     // Always show UI when scrolled to top
+    //     console.log("Scrolled to top, showing UI");
+    //     toggleUI(true);
+    //     // lastScrollY.current = scrollY;
+    //     // lastToggleTime.current = now;
+    //     // return;
+    //   }
+      else if ((delta > 0 || delta < 0) && (type === 'scroll')) {
+      toggleUI(false);
+      // return;
+      } 
+        // // Hide UI when scrolling down (but not at the top)
+        // else if (delta > 0 && Math.abs(delta) > MIN_SCROLL_DELTA && now - lastToggleTime.current > SCROLL_DEBOUNCE_MS) {
+        //   toggleUI(false);
+        //   lastToggleTime.current = now;
+        // }
+    // else if (delta < 0) {
+    //   toggleUI(true);
+    // }
 
     lastScrollY.current = scrollY;
     lastToggleTime.current = now;
@@ -179,7 +225,7 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
       fontSize={fontSize}
       increaseFont={increaseFont}
       decreaseFont={decreaseFont}
-      showFontControls={true}
+      showFontControls={false}
       showAppLayout={showUI}
     >
       <View style={{ flex: 1 }}>
