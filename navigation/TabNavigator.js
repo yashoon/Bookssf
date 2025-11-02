@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import SectionMenuScreen from '../screens/SectionMenuScreen';
 import SearchScreen from '../screens/SearchScreen';
 import LanguageSelectorScreen from '../screens/LanguageSelectorScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 //adding animation
 import { BottomTabBar } from '@react-navigation/bottom-tabs';
@@ -135,6 +136,14 @@ const TabNavigator = () => {
           // <Icon name="menu-outline" size={24} color="#000" />
         ),
   }}/>
+        <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => <Icon name="person-outline" color={color} size={size} />,
+        }}
+      />
+
 
       {/* <Tab.Screen name="ChapterContent" 
       component={ChapterContentScreen} 

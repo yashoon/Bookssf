@@ -1,84 +1,80 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import ChapterListScreen from './screens/ChapterListScreen';
-import ChapterContentScreen from './screens/ChapterContentScreen';
-import WelcomeScreen from './screens/WelcomeScreen';
-import SQLite from 'react-native-sqlite-storage';
-import { useEffect, useState } from 'react';
-// import './i18n'; // Import i18n configuration
-import { insertChapters } from './database/Database';
-import { getDBConnection, createTable, getPreDBConnection, getDBConnection_local } from './database/Database';
-import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
-import 'react-native-gesture-handler';
-import { enableScreens } from 'react-native-screens';
-import Icon from 'react-native-vector-icons/Ionicons';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import TabNavigator from './navigation/TabNavigator'
-import { FontSizeProvider } from './components/FontSizeContext/FontSizeContext';
+import { ActivityIndicator, View, Text } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './database/firebaseConfig';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import WelcomeScreen from './screens/WelcomeScreen';
+import SignupScreen from './screens/SignupScreen';
+import LoginScreen from './screens/LoginScreen';
+import TabNavigator from './navigation/TabNavigator';
+import { FontSizeProvider } from './components/FontSizeContext/FontSizeContext';
 import { LanguageProvider } from './components/LanguageContext';
-
-
-
-const Tab = createBottomTabNavigator();
-enableScreens();
-
-
 
 const Stack = createStackNavigator();
 
-// const db = SQLite.openDatabase(
-//   { name: 'bookDB.db', location: 'default' },
-//   () => console.log('Database opened'),
-//   (error) => console.error('Error opening database', error)
-// );
-
 export default function App() {
-
-  const [users, setUsers] = useState([]);
-
-  const loadDataCallback = async () => {
-    try {
-       
-       const db = await getDBConnection();
-       await createTable(db);
-        await insertChapters(db);
-        // const user = await getUsers(db);
-        // setUsers(user);
-        // console.log("above is for getting users")
-        // console. log(users)
-    } catch (error) {
-       console.error(error);
-    }
- };
+  const [user, setUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    // console.log('Initializing database'); 
-    // getPreDBConnection().then((db) => { 
-    //   console.log('Database initializing...');
-    // });
-    // getDBConnection_local('ssf_english').then((db) => {
-    //   console.log('Local database initialized');
-    // });
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        await AsyncStorage.setItem("authUser", JSON.stringify(currentUser));
+
+        if (!user) {
+          Toast.show({
+            type: "success",
+            text1: "Auto login successful ✅",
+          });
+        }
+
+        setUser(currentUser);
+      } else {
+        await AsyncStorage.removeItem("authUser");
+        setUser(null);
+      }
+
+      setCheckingAuth(false);
+    });
+
+    return unsubscribe;
   }, []);
 
+  // ✅ Show loader while checking auth
+  if (checkingAuth) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#000" />
+        <Text style={{ marginTop: 15, fontSize: 16 }}>Checking login status...</Text>
+      </View>
+    );
+  }
+
   return (
-    // <>
-    // <LanguageProvider> {/* ✅ Wrap once here */}
     <LanguageProvider>
-    <FontSizeProvider>
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false, headerLeft: null, headerTitleAlign: 'center' }}>
-        <Stack.Screen name="Welcome" component={WelcomeScreen} screenOptions={{headerShown: false}}/>
-        <Stack.Screen name="Shepherd's Staff" component={TabNavigator} />
-        {/* <Stack.Screen name="ChapterList" component={ChapterListScreen} /> */}
-        {/* <Stack.Screen name="ChapterContent" component={ChapterContentScreen} /> */}
-      </Stack.Navigator>
-    </NavigationContainer>
-    </FontSizeProvider>
-     </LanguageProvider>
-    // <Toast />
-    // </>
+      <FontSizeProvider>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {!user ? (
+              <>
+                <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="Signup" component={SignupScreen} />
+              </>
+            ) : (
+              <>
+                <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                <Stack.Screen name="Shepherd's Staff" component={TabNavigator} />
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+
+        {/* ✅ Toast must be here */}
+        <Toast />
+      </FontSizeProvider>
+    </LanguageProvider>
   );
 }
