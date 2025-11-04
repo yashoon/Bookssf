@@ -80,3 +80,4 @@ firebase-debug.log
 .firebaserc   # (optional, based on your team/project use)
 *.db
 public/
+.env
