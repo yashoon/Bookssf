@@ -12,6 +12,8 @@ linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
   use_frameworks! :linkage => linkage.to_sym
+else
+  use_frameworks! :linkage => :static
 end
 
 target 'Bookssf' do
@@ -19,17 +21,44 @@ target 'Bookssf' do
 
   use_react_native!(
     :path => config[:reactNativePath],
-    # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # ✅ Only the top-level Firebase pods use modular headers
+  pod 'Firebase/Core', :modular_headers => true
+  pod 'Firebase/Auth', :modular_headers => true
+  pod 'Firebase/Firestore', :modular_headers => true
+  pod 'Firebase/Analytics', :modular_headers => true
+
+  pre_install do |installer|
+    # Prevent CocoaPods from complaining about static linking
+    Pod::Installer::Xcode::TargetValidator.send(
+      :define_method,
+      :verify_no_static_framework_transitive_dependencies
+    ) {}
+
+    # 🩹 Disable modularization for C/C++ pods like leveldb-library
+    installer.pod_targets.each do |pod|
+      if ['SocketRocket', 'leveldb-library', 'gRPC-C++', 'abseil'].include?(pod.name)
+        def pod.build_type;
+          Pod::BuildType.static_library
+        end
+      end
+    end
+  end
+
   post_install do |installer|
-    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
       installer,
       config[:reactNativePath],
-      :mac_catalyst_enabled => false,
-      # :ccache_enabled => true
+      :mac_catalyst_enabled => false
     )
+
+    # Enable Swift modules only where supported
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+      end
+    end
   end
 end

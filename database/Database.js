@@ -29,7 +29,7 @@ export const getDBConnection_local = async (language) => {
     ? {
         name: dbName,
         // location: 'Documents', // iOS needs this
-        // location: 'Library', // iOS needs this
+        location: 'Library', // iOS needs this
       }
     : {
         name: dbPath, // Use the full path for Android

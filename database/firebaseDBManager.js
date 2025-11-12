@@ -2,6 +2,7 @@ import NetInfo from '@react-native-community/netinfo';
 import RNFS from 'react-native-fs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ColorSpace } from 'react-native-reanimated';
+import axios from 'axios';
 
 const FIREBASE_BASE_URL = 'https://shepherd-s-staff.web.app/databases';
 
@@ -9,12 +10,20 @@ export const ensureDatabaseExists = async (language) => {
   const dbFileName = `${language}.db`;
   // const localPath = `${RNFS.DocumentDirectoryPath}/${dbFileName}`;
   const localPath = Platform.OS === 'ios' 
-  ? `${RNFS.DocumentDirectoryPath}/${dbFileName}`
+  ? `${RNFS.LibraryDirectoryPath}/${dbFileName}`
   : `${RNFS.DocumentDirectoryPath}/${dbFileName}`;
   const targetDBPath = `${RNFS.LibraryDirectoryPath}/${dbFileName}`; // iOS expects the DB here
   const versionUrl = `${FIREBASE_BASE_URL}/ssf_version.json`;
   const dbUrl = `${FIREBASE_BASE_URL}/ssf_${dbFileName}`;
   const versionKey = `db_version_${language}`;
+
+      // Configure axios defaults
+      axios.defaults.timeout = 30000; // 30 seconds
+      axios.defaults.headers.common['Accept'] = 'application/json';
+
+    // Create cancel token for request cancellation if needed
+    const CancelToken = axios.CancelToken;
+    const source = CancelToken.source();
 
   try {
 
@@ -35,22 +44,34 @@ export const ensureDatabaseExists = async (language) => {
       console.log('Internet connection is available. Proceeding to check for updates.');
       console.log(`Fetching version from: ${versionUrl}`);
       // const response = await fetch(versionUrl);
-      const response = await fetch(`${versionUrl}?t=${Date.now()}`);
+      // const response = await fetch(`${versionUrl}?t=${Date.now()}`);
+
+      const response = await axios.get(`${versionUrl}?t=${Date.now()}`, {
+        timeout: 30000,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        cancelToken: source.token,
+      });
+      
       
       console.log(`Response status: ${response.status}`);
-      console.log(`Response ok: ${response.ok}`);
+      console.log(`Response status: ${response.data}`);
+      // console.log(`Response ok: ${response.ok}`);
       // console.log(`Response : ${response.json()[language]}`);
 
-      if (!response.ok) {
-          const errorText = await response.text(); // try to read error message
+      if (response.status !== 200) {
+          const errorText = await response.statusText; // try to read error message
           throw new Error(`Failed to fetch version file: ${response.status} - ${errorText}`);
         }
         
   
-      const remoteVersions = await response.json();
+        const remoteVersions = response.data; // axios already parses JSON
+        remoteVersion = remoteVersions[language]?.toString();
       console.log(`Response -------: ${remoteVersions[language]}`);
       // remoteVersion = remoteVersions['english']?.to String(); // Assuming 'english' is the key for the default language
-      remoteVersion = remoteVersions[language]?.toString();
+      // remoteVersion = remoteVersions[language]?.toString();
       console.log(`Remote version for ${language}:`, remoteVersion);
 
     }

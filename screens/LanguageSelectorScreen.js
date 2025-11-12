@@ -81,7 +81,10 @@ export default function LanguageSelectorScreen({ navigation }) {
       // return exists;
 
       // Option 2: If you're using RNFS to check file system
-      const dbPath = `${RNFS.DocumentDirectoryPath}/${languageCode}.db`;
+      // const dbPath = `${RNFS.DocumentDirectoryPath}/${languageCode}.db`;
+      const dbPath = Platform.OS === 'ios' 
+      ? `${RNFS.LibraryDirectoryPath}/${languageCode}.db`
+      : `${RNFS.DocumentDirectoryPath}/${languageCode}.db`;
       const exists = await RNFS.exists(dbPath);
       console.log(`Database file for ${languageCode} exists:`, exists);
       console.log('Checked path:', dbPath);

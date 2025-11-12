@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "824535204670",
+    "project_id": "shepherd-s-staff",
+    "storage_bucket": "shepherd-s-staff.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:824535204670:android:5073b6c781410cc3bd626f",
+        "android_client_info": {
+          "package_name": "com.bookssf"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKvcJjSRCJWWydLS0mq1PFfhuaNqKPYZ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
