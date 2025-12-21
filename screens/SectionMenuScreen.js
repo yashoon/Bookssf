@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ProgressBarAndroid, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import AppLayout from '../components/AppLayout';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDBConnection_local, getUsers } from '../database/Database';
 import { useLanguage } from '../components/LanguageContext';
+import { ProgressBar } from '@react-native-community/progress-bar-android';
 
 const SectionMenuScreen = ({ navigation, route }) => {
   const [lastReadChapter, setLastReadChapter] = useState(null);
@@ -155,13 +156,20 @@ const SectionMenuScreen = ({ navigation, route }) => {
                 </Text>
                 
                 {Platform.OS === 'android' ? (
-                  <ProgressBarAndroid
-                    styleAttr="Horizontal"
-                    indeterminate={false}
-                    progress={downloadProgress / 100}
-                    color="green"
-                    style={styles.progressBar}
-                  />
+                  // <ProgressBarAndroid
+                  //   styleAttr="Horizontal"
+                  //   indeterminate={false}
+                  //   progress={downloadProgress / 100}
+                  //   color="green"
+                  //   style={styles.progressBar}
+                  // />
+                  <View style={styles.example}>
+                  <Text>Horizontal Progress Indicator</Text>
+                  <ProgressBar styleAttr="Horizontal"
+                  animating={true}
+                  color="red" />
+                </View>
+          
                 ) : (
                   // iOS progress bar alternative
                   <View style={styles.progressBarIOS}>
@@ -284,6 +292,9 @@ const styles = StyleSheet.create({
   progressBar: {
     width: '80%',
     height: 8,
+  },
+  example: {
+    marginVertical: 24,
   },
   progressBarIOS: {
     width: '80%',
