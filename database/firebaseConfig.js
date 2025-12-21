@@ -47,22 +47,13 @@ const firebaseConfig = {
   appId: FIREBASE_APP_ID,
 };
 
-// // ✅ Add fallback values for development
-// const firebaseConfig = {
-//   apiKey: FIREBASE_API_KEY || "AIzaSyBKvcJjSRCJWWydLS0mq1PFfhuaNqKPYZ4",
-//   authDomain: FIREBASE_AUTH_DOMAIN || "shepherd-s-staff.firebaseapp.com",
-//   projectId: FIREBASE_PROJECT_ID || "shepherd-s-staff",
-//   storageBucket: FIREBASE_STORAGE_BUCKET || "shepherd-s-staff.appspot.com",
-//   messagingSenderId: FIREBASE_MESSAGING_SENDER_ID || "824535204670",
-//   appId: FIREBASE_APP_ID || "1:824535204670:android:5073b6c781410cc3bd626f",
-// };
 
-// ✅ Log to verify config is loading (remove in production)
-console.log("Firebase Config loaded:", {
-  apiKey: firebaseConfig.apiKey ? "✓" : "✗",
-  authDomain: firebaseConfig.authDomain ? "✓" : "✗",
-  projectId: firebaseConfig.projectId ? "✓" : "✗"
-});
+// // ✅ Log to verify config is loading (remove in production)
+// console.log("Firebase Config loaded:", {
+//   apiKey: firebaseConfig.apiKey ? "✓" : "✗",
+//   authDomain: firebaseConfig.authDomain ? "✓" : "✗",
+//   projectId: firebaseConfig.projectId ? "✓" : "✗"
+// });
 
 console.log("🔥 Initializing Firebase...");
 
