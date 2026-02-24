@@ -8,7 +8,7 @@ const STORAGE_KEYS = {
 
 // Default configuration
 const DEFAULT_LANGUAGE = null; // Set to null to indicate no default language
-const SUPPORTED_LANGUAGES = ['english', 'telugu', 'nepali', 'de', 'it', 'pt', 'zh', 'ja', 'ko', 'ar'];
+const SUPPORTED_LANGUAGES = ['english', 'telugu', 'nepali', 'hindi', 'de', 'it', 'pt', 'zh', 'ja', 'ko', 'ar'];
 
 // Create the context
 export const LanguageContext = createContext();

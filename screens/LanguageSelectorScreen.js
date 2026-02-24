@@ -12,6 +12,7 @@ import { getDBConnection_local } from '../database/Database';
 const LANGUAGE_OPTIONS = [
   { label: 'English', value: 'english' },
   { label: 'Nepali', value: 'nepali' },
+  { label: 'हिन्दी', value: 'hindi' },
   // { label: 'Telugu', value: 'telugu' },
   // Add more as needed 
 ];
