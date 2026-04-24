@@ -12,7 +12,6 @@ import LoginScreen from './screens/LoginScreen';
 import TabNavigator from './navigation/TabNavigator';
 import { FontSizeProvider } from './components/FontSizeContext/FontSizeContext';
 import { LanguageProvider } from './components/LanguageContext';
-
 const Stack = createStackNavigator();
 
 export default function App() {

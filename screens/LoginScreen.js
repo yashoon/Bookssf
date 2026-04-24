@@ -1,5 +1,5 @@
 // screens/LoginScreen.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getFriendlyFirebaseError } from "../utils/firebaseErrorMessages";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -14,14 +14,31 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithCredential  } from 'firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { auth } from '../database/firebaseConfig';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    // Configure Google Sign-In when component mounts
+    console.log("🔧 Configuring Google Sign-In...");
+    try {
+      GoogleSignin.configure({
+        webClientId: '824535204670-ouarn36ts2ofjm89budevs673ri7sqeu.apps.googleusercontent.com',
+        // webClientId: '605730930736-ofkf3a2ou9fckk5929vemqre33nqjq94.apps.googleusercontent.com',
+        offlineAccess: true,
+      });
+      console.log("✅ Google Sign-In configured successfully");
+    } catch (error) {
+      console.error("❌ Error configuring Google Sign-In:", error);
+    }
+  }, []);
 
   const validateFields = () => {
     let valid = true;
@@ -83,6 +100,76 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setErrors({}); // Clear any previous errors
+    
+    try {
+      console.log("🔍 Checking Google Play Services...");
+      
+      // Check if device supports Google Play Services
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      console.log("✅ Google Play Services available");
+      
+      console.log("🔐 Starting Google Sign-In...");
+      
+      // Get user's ID token
+      const signInResult = await GoogleSignin.signIn();
+      console.log("✅ Got sign-in result:", signInResult);
+      
+      // const { idToken } = signInResult;
+      const { idToken, accessToken } = await GoogleSignin.getTokens();
+    // idToken is the JWT you send to your server
+
+      
+      if (!idToken) {
+        throw new Error('No ID token received from Google Sign-In');
+      }
+      
+      console.log("✅ Got ID token");
+      
+      // Create a Google credential with the token
+      console.log("🔐 Creating Google credential...");
+      const googleCredential = GoogleAuthProvider.credential(idToken);
+      console.log("✅ Google credential created");
+      
+      // Sign in with credential
+      console.log("🔐 Signing in with Firebase...");
+      const userCredential = await signInWithCredential(auth, googleCredential);
+      const user = userCredential.user;
+      
+      console.log("✅ Google sign-in successful:", user.email);
+      
+      // Store user data
+      await AsyncStorage.setItem("authUser", JSON.stringify(user));
+      
+      // navigation.replace("Welcome"); // go to Welcome screen
+    } catch (error) {
+      console.error("❌ Google Sign-In Error:");
+      console.error("  Code:", error.code);
+      console.error("  Message:", error.message);
+      console.error("  Full error:", error);
+      
+      // Handle specific error codes
+      if (error.code === '12501') {
+        // User cancelled the sign-in - don't show error
+        console.log('ℹ️ User cancelled Google Sign-In');
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        setErrors({ firebase: 'An account already exists with the same email address' });
+      } else if (error.code === 'auth/invalid-credential') {
+        setErrors({ firebase: 'Invalid Google credentials. Please try again.' });
+      } else if (error.code === 'auth/operation-not-allowed') {
+        setErrors({ firebase: 'Google Sign-In is not enabled. Please contact support.' });
+      } else if (error.code === 'auth/user-disabled') {
+        setErrors({ firebase: 'This account has been disabled.' });
+      } else {
+        setErrors({ firebase: error.message || 'Failed to sign in with Google' });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -129,6 +216,24 @@ export default function LoginScreen({ navigation }) {
           <Text style={styles.buttonText}>Sign In</Text>
         )}
       </TouchableOpacity>
+
+            {/* Divider */}
+            <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>OR</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      {/* Google Sign-In Button */}
+    
+
+      <GoogleSignInButton 
+  onPress={handleGoogleSignIn} 
+  disabled={loading}
+  loading={loading}
+/>
+
+      {/* Google sign-in button end */}
 
       <TouchableOpacity onPress={handleForgotPassword}>
         <Text style={styles.link}>Forgot Password?</Text>
@@ -194,6 +299,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    width: '100%',
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#dcdde1',
+  },
+  dividerText: {
+    marginHorizontal: 15,
+    color: '#888',
+    fontSize: 14,
+    fontWeight: '500',
   },
   link: {
     color: '#0984e3',

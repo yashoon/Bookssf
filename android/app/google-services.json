@@ -12,7 +12,28 @@
           "package_name": "com.bookssf"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "824535204670-na38vbfhelbest5vt5taql7smr449vur.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bookssf",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "824535204670-uo4rcr1sp522s5hlkiam9li63a3otkhv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bookssf",
+            "certificate_hash": "f9bcfd7a94a3d3ae73741db4725902a55543c281"
+          }
+        },
+        {
+          "client_id": "824535204670-ouarn36ts2ofjm89budevs673ri7sqeu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBKvcJjSRCJWWydLS0mq1PFfhuaNqKPYZ4"
@@ -20,7 +41,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "824535204670-ouarn36ts2ofjm89budevs673ri7sqeu.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "824535204670-20eiljdig35n2eg59ai82hqs6b8g9gvp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "org.reactjs.native.example.Bookssf"
+              }
+            }
+          ]
         }
       }
     }

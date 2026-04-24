@@ -18,12 +18,13 @@
 
 
 // firebaseConfig.js
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   initializeAuth,
+  getAuth,
   getReactNativePersistence
 } from "firebase/auth";
-import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getFirestore } from "firebase/firestore";
 
 import {
@@ -36,7 +37,7 @@ import {
 } from "@env";
 
 
-// console.log(FIREBASE_API_KEY);
+console.log(FIREBASE_API_KEY);
 
 const firebaseConfig = {
   apiKey: FIREBASE_API_KEY,
@@ -47,13 +48,61 @@ const firebaseConfig = {
   appId: FIREBASE_APP_ID,
 };
 
-// ✅ Enable persistent authentication for React Native
-const app = initializeApp(firebaseConfig);
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-});
+
+// // ✅ Log to verify config is loading (remove in production)
+// console.log("Firebase Config loaded:", {
+//   apiKey: firebaseConfig.apiKey ? "✓" : "✗",
+//   authDomain: firebaseConfig.authDomain ? "✓" : "✗",
+//   projectId: firebaseConfig.projectId ? "✓" : "✗"
+// });
+
+console.log("🔥 Initializing Firebase...");
+
+// Initialize app
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+
+console.log(app.name ? `✅ Firebase app initialized: ${app.name}` : "❌ Firebase app initialization failed");
+
+console.log("✅ Step 1: Firebase App initialized");
+
+console.log("🔥 Step 2: Initializing Auth...");
+let auth;
+
+// Initialize auth with persistence
+try {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage)
+  });
+  console.log("✅ Step 2: Auth initialized with persistence");
+} catch (error) {
+  console.log("⚠️ Step 2 Error:", error.code);
+  console.log("⚠️ Step 2 Message:", error.message);
+  
+  // If auth is already initialized, use getAuth instead
+  if (error.code === 'auth/already-initialized') {
+    console.log("🔄 Using existing auth instance...");
+    auth = getAuth(app);
+    console.log("✅ Step 2: Got existing auth instance");
+  } else {
+    throw error;
+  }
+}
 
 const db = getFirestore(app);
 
+console.log("✅ Firebase initialized successfully");
+console.log("✅ Auth:", auth ? "Ready" : "Failed");
+console.log("✅ DB:", db ? "Ready" : "Failed");
+
 export { auth, db };
+
+// // ✅ Enable persistent authentication for React Native
+// const app = initializeApp(firebaseConfig);
+// const auth = initializeAuth(app, {
+//   persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+// });
+
+// const db = getFirestore(app);
+
+// export { auth, db };
 
