@@ -24,6 +24,7 @@ DerivedData
 
 # Android/IntelliJ
 #
+android/.kotlin/errors/*.log
 build/
 .idea
 .gradle
