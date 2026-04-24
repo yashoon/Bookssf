@@ -6,6 +6,7 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnable
 import com.facebook.react.defaults.DefaultReactActivityDelegate
 import com.facebook.react.ReactRootView;
 import com.swmansion.gesturehandler.react.RNGestureHandlerEnabledRootView;
+import android.os.Bundle
 
 class MainActivity : ReactActivity() {
 
@@ -28,5 +29,11 @@ class MainActivity : ReactActivity() {
                 return RNGestureHandlerEnabledRootView(this@MainActivity)
             }
         }
+    }
+
+/**change can resolve the Unable to instantiate fragment com.swmansion.rnscreens.Screen error
+     */
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(null) // 🔥 This prevents fragment instantiation errors from react-native-screens
     }
 }

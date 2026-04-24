@@ -85,8 +85,8 @@ android {
         applicationId "com.bookssf"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 9
-        versionName "1.5.2"
+        versionCode 10
+        versionName "1.5.3"
     }
     signingConfigs {
         debug {
