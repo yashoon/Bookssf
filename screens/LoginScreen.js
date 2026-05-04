@@ -182,7 +182,26 @@ export default function LoginScreen({ navigation }) {
 
       <Text style={styles.title}>Sign In</Text>
 
-      <TextInput
+      
+
+      {/* Google Sign-In Button */}
+    
+
+      <GoogleSignInButton 
+  onPress={handleGoogleSignIn} 
+  disabled={loading}
+  loading={loading}
+/>
+
+
+            {/* Divider */}
+            <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>OR</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+<TextInput
         style={styles.input}
         placeholder="Email"
         placeholderTextColor="#888"
@@ -217,21 +236,6 @@ export default function LoginScreen({ navigation }) {
         )}
       </TouchableOpacity>
 
-            {/* Divider */}
-            <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>OR</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      {/* Google Sign-In Button */}
-    
-
-      <GoogleSignInButton 
-  onPress={handleGoogleSignIn} 
-  disabled={loading}
-  loading={loading}
-/>
 
       {/* Google sign-in button end */}
 
