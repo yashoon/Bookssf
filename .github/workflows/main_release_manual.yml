@@ -1,0 +1,157 @@
+name: Android Release Build with Stages
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_apk:
+    runs-on: ubuntu-latest
+
+    env:
+      FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+      FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+      FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+      FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+
+    steps:
+      - name: 🧱 Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Create .env file
+        run: |
+          echo "FIREBASE_API_KEY=$FIREBASE_API_KEY" >> .env
+          echo "FIREBASE_AUTH_DOMAIN=$FIREBASE_AUTH_DOMAIN" >> .env
+          echo "FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID" >> .env
+          echo "FIREBASE_STORAGE_BUCKET=$FIREBASE_STORAGE_BUCKET" >> .env
+          echo "FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID" >> .env
+          echo "FIREBASE_APP_ID=$FIREBASE_APP_ID" >> .env
+
+      - name: ⚙️ Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: 📦 Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      - name: 📦 Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: 📥 Install Dependencies
+        run: npm ci
+
+      - name: ⚙️ Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: 🔐 Restore Keystore
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > android/app/my-release-key.keystore
+
+      - name: 🔧 Configure Gradle Properties
+        run: |
+          echo "MYAPP_RELEASE_STORE_FILE=my-release-key.keystore" >> android/gradle.properties
+          echo "MYAPP_RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> android/gradle.properties
+          echo "MYAPP_RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> android/gradle.properties
+          echo "MYAPP_RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> android/gradle.properties
+
+      - name: 🛠️ Make gradlew Executable
+        run: chmod +x android/gradlew
+
+      # - name: 🏗️ Build Release APK
+      #   run: cd android && ./gradlew assembleRelease --parallel --no-daemon --build-cache
+
+      - name: 🏗️ Build Bundle APK
+        run: cd android && ./gradlew bundleRelease --parallel --no-daemon --build-cache
+
+      # - name: 💾 Upload APK Artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: release-apk
+      #     path: android/app/build/outputs/apk/release/app-release.apk
+      
+      - name: 💾 Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+  Upload_play_store:
+    needs: build_apk
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download AAB Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-aab
+          path: ./release
+      
+      - name: 🚀 Upload to Google Play (Closed Testing)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GPLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.bookssf
+          releaseFiles: ./release/app-release.aab
+          track: alpha   # 👈 Uploads to Closed Testing track
+          # userFraction: 0.5  # 👈 50% rollout
+          status: completed
+
+  notify_discord:
+    needs: [build_apk, Upload_play_store]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: 📣 Notify Discord
+        run: |
+          STATUS="${{ needs.build_apk.result }}"
+          UPLOAD_STATUS="${{ needs.Upload_play_store.result }}"
+          if [ "$STATUS" = "success" ]; then
+            COLOR="3066993"  # Green
+            EMOJI="✅"
+          elif [ "$STATUS" = "failure" ]; then
+            COLOR="15158332"  # Red
+            EMOJI="❌"
+          else
+            COLOR="8359053"  # Orange
+            EMOJI="⚠️"
+          fi
+          if [ "$UPLOAD_STATUS" = "success" ]; then
+            U_COLOR="3066993"  # Green
+            U_EMOJI="✅"
+          elif [ "$UPLOAD_STATUS" = "failure" ]; then
+            U_COLOR="15158332"  # Red
+            U_EMOJI="❌"
+          else
+            U_COLOR="8359053"  # Orange
+            U_EMOJI="⚠️"
+          fi
+          curl -H "Content-Type: application/json" \
+            -X POST -d "{
+              \"username\": \"GitHub Actions Bot\",
+              \"embeds\": [{
+            \"title\": \"$EMOJI Build $STATUS\",
+            \"description\": \"Repository: [${{ github.repository }}](https://github.com/${{ github.repository }})\\nBranch: \`${{ github.ref_name }}\`\",
+            \"color\": $COLOR
+          },
+          {
+            \"title\": \"$U_EMOJI Publish $UPLOAD_STATUS\",
+            \"description\": \"Commit: [View Commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\",
+            \"color\": $U_COLOR
+          }]
+            }" ${{ secrets.DISCORD_WEBHOOK_URL }}
