@@ -13,7 +13,7 @@ const LANGUAGE_OPTIONS = [
   { label: 'English', value: 'english' },
   { label: 'Nepali', value: 'nepali' },
   { label: 'हिन्दी', value: 'hindi' },
-  // { label: 'Telugu', value: 'telugu' },
+  { label: 'తెలుగు', value: 'telugu' },
   // Add more as needed 
 ];
 
