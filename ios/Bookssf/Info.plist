@@ -20,70 +20,68 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.824535204670-20eiljdig35n2eg59ai82hqs6b8g9gvp</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	
-	<!-- ✅ File Sharing Keys -->
-	<key>UIFileSharingEnabled</key>
-	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
-	
-	<!-- ✅ Fixed App Transport Security Configuration -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
-		<!-- Keep this false for production security -->
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
-		
 		<key>NSExceptionDomains</key>
 		<dict>
-			<!-- Firebase Hosting Domain -->
-			<key>shepherd-s-staff.web.app</key>
-			<dict>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-				<!-- REMOVED: NSExceptionAllowsInsecureHTTPLoads - Firebase uses HTTPS -->
-				<key>NSExceptionRequiresForwardSecrecy</key>
-				<false/>
-				<key>NSRequiresCertificateTransparency</key>
-				<false/>
-				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.2</string>
-			</dict>
-			
-			<!-- Add Firebase's other domains that might be accessed -->
 			<key>firebaseapp.com</key>
 			<dict>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-				<key>NSExceptionRequiresForwardSecrecy</key>
-				<false/>
-				<key>NSRequiresCertificateTransparency</key>
-				<false/>
 				<key>NSExceptionMinimumTLSVersion</key>
 				<string>TLSv1.2</string>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSRequiresCertificateTransparency</key>
+				<false/>
 			</dict>
-			
-			<!-- Google's CDN domains (sometimes used by Firebase) -->
 			<key>googleapis.com</key>
 			<dict>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-				<key>NSExceptionRequiresForwardSecrecy</key>
-				<false/>
-				<key>NSRequiresCertificateTransparency</key>
-				<false/>
 				<key>NSExceptionMinimumTLSVersion</key>
 				<string>TLSv1.2</string>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSRequiresCertificateTransparency</key>
+				<false/>
+			</dict>
+			<key>shepherd-s-staff.web.app</key>
+			<dict>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSRequiresCertificateTransparency</key>
+				<false/>
 			</dict>
 		</dict>
 	</dict>
-
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
