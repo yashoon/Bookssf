@@ -1,5 +1,8 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
+// If using Expo instead of react-native-vector-icons, use this import:
+// import Icon from '@expo/vector-icons/Ionicons';
 
 const WelcomeScreen = ({ navigation }) => {
   return (
@@ -7,97 +10,170 @@ const WelcomeScreen = ({ navigation }) => {
       <View style={styles.imageContainer}>
         <Image source={require('../assets/SS_Icon.png')} style={styles.image} />
       </View>
-      
-      <Text style={styles.title}></Text>
+
+      <Text style={styles.appName}>Shepherd's Staff</Text>
+      <Text style={styles.tagline}>A resource for every season of ministry</Text>
 
       <View style={styles.infoCard}>
-        <Text style={styles.bookMeta}>© World MAP, 1993</Text>
-        <Text style={styles.bookMeta}>  All rights reserved.</Text>
-        <Text style={styles.bookMeta}></Text>
-        <Text style={styles.publishHouse}>Facilitated By:</Text>
-        <Text style={styles.publishHouse}>The True Grace Ministries</Text>
-        <Text style={styles.publishHouse}>www.ttgm.org</Text>
-        <Text style={styles.publishHouse}></Text>
-        <Text style={styles.publishNote}>Note: This App is copy right protected and authorized by the World Map organization.</Text>
-      </View>
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Shepherd's Staff")}>
-        <Text style={styles.buttonText}>Start Reading</Text>
-      </TouchableOpacity>
+        <View style={styles.infoRow}>
+          <Icon name="shield-checkmark-outline" size={16} color="#4CAF50" style={styles.infoIcon} />
+          <Text style={styles.bookMeta}>© World MAP, 1993. All rights reserved.</Text>
+        </View>
 
+        <View style={styles.divider} />
+
+        <View style={styles.infoRow}>
+          <Icon name="people-outline" size={16} color="#4CAF50" style={styles.infoIcon} />
+          <View style={styles.infoTextGroup}>
+            <Text style={styles.publishLabel}>Facilitated By</Text>
+            <Text style={styles.publishHouse}>The True Grace Ministries</Text>
+            <Text style={styles.publishLink}>www.ttgm.org</Text>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.infoRow}>
+          <Icon name="information-circle-outline" size={16} color="#999" style={styles.infoIcon} />
+          <Text style={styles.publishNote}>
+            This app is copyright protected and authorized by the World Map organization.
+          </Text>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={styles.button}
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate("Shepherd's Staff")}
+      >
+        <Text style={styles.buttonText}>Start Reading</Text>
+        <Icon name="arrow-forward" size={18} color="#fff" style={styles.buttonIcon} />
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', 
-    backgroundColor: '#fff', width: '100%' },
-  // image: { width: '80%', height: '30%', resizeMode: 'contain', },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgb(255, 255, 255)',
+    width: '100%',
+    paddingHorizontal: 24,
+  },
   image: {
-    width: 390, // Slightly larger than container
-    height: 390,
+    width: 160,
+    height: 160,
     resizeMode: 'cover',
   },
   imageContainer: {
-    width: 295,
-    height: 295,
-    borderRadius: 300,
-    // borderWidth: 3,
-    // borderColor: '#007AFF',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     overflow: 'hidden',
-    marginBottom: 20,
+    marginBottom: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#4CAF5015',
   },
-  title: { fontSize: 24, fontWeight: 'bold', marginVertical: 2},
-  button: { backgroundColor: 'rgb(4, 118, 40)', padding: 15, borderRadius: 10 },
-  buttonText: { color: '#fff', fontSize: 18 },
-  infoCard: {
-    backgroundColor: '#fff',
-    marginTop: 0,
-    borderRadius: 4,
-    padding: 16,
-    marginVertical: 12,
-    marginHorizontal: 0,
-    shadowColor: '#000',
-    // shadowOffset: { width: 5, height: 2 },
-    // shadowOpacity: 0.1,
-    // shadowRadius: 4,
-    elevation: 0.4, // Android shadow
-    width: '80%',
-  },
-  bookTitle: {
-    fontSize: 20,
+  appName: {
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#222',
-    marginBottom: 8,
+    color: '#333',
     textAlign: 'center',
+  },
+  tagline: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 24,
+  },
+  infoCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 18,
+    marginBottom: 24,
+    width: '100%',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  infoIcon: {
+    marginRight: 10,
+    marginTop: 2,
+  },
+  infoTextGroup: {
+    flex: 1,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginVertical: 12,
   },
   bookMeta: {
-    fontSize: 14,
-    fontWeight: '800',
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
     color: '#555',
-    textAlign: 'center',
-    marginTop: 2,
+  },
+  publishLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#999',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   publishHouse: {
     fontSize: 14,
-    color: '#000',
-    textAlign: 'center',
+    fontWeight: '600',
+    color: '#333',
+  },
+  publishLink: {
+    fontSize: 13,
+    color: '#4CAF50',
     marginTop: 2,
   },
   publishNote: {
+    flex: 1,
     fontSize: 12,
-    color: '#000',
-    textAlign: 'center',
-    marginTop: 2,
+    color: '#999',
     fontStyle: 'italic',
+    lineHeight: 17,
   },
-  publishHouseTitle: {
-    fontSize: 14,
-    color: '#777',
-    textAlign: 'left',
-    justifyContent: 'space-around',
-    marginTop: 2,
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 15,
+    paddingHorizontal: 32,
+    borderRadius: 20,
+    width: '100%',
+    shadowColor: '#4CAF50',
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  buttonIcon: {
+    marginLeft: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });
 

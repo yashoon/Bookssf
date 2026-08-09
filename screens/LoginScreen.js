@@ -12,18 +12,23 @@ import {
   Image,
   ActivityIndicator,
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
 } from 'react-native';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithCredential  } from 'firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { auth } from '../database/firebaseConfig';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import Icon from 'react-native-vector-icons/Ionicons';
+// If using Expo instead of react-native-vector-icons, use this import:
+// import Icon from '@expo/vector-icons/Ionicons';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     // Configure Google Sign-In when component mounts
@@ -175,78 +180,104 @@ export default function LoginScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
     >
-
-      <View style={styles.imageContainer}>
-        <Image source={require('../assets/SS_Icon.png')} style={styles.image} />
-      </View>
-
-      <Text style={styles.title}>Sign In</Text>
-
-      
-
-      {/* Google Sign-In Button */}
-    
-
-      <GoogleSignInButton 
-  onPress={handleGoogleSignIn} 
-  disabled={loading}
-  loading={loading}
-/>
-
-
-            {/* Divider */}
-            <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>OR</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-<TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#888"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      {errors.email && <Text style={styles.error}>{errors.email}</Text>}
-
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#888"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      {errors.password && <Text style={styles.error}>{errors.password}</Text>}
-
-      {errors.firebase && <Text style={styles.errorCenter}>{errors.firebase}</Text>}
-
-      <TouchableOpacity
-        style={[styles.button, loading && { opacity: 0.6 }]}
-        onPress={handleLogin}
-        disabled={loading}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Sign In</Text>
+        <View style={styles.imageContainer}>
+          <Image source={require('../assets/SS_Icon.png')} style={styles.image} />
+        </View>
+
+        <Text style={styles.title}>Welcome Back</Text>
+        <Text style={styles.subtitle}>Sign in to continue</Text>
+
+        {/* Google Sign-In Button */}
+        <GoogleSignInButton
+          onPress={handleGoogleSignIn}
+          disabled={loading}
+          loading={loading}
+        />
+
+        {/* Divider */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* Email field */}
+        <View style={[styles.inputContainer, errors.email && styles.inputContainerError]}>
+          <Icon name="mail-outline" size={18} color="#999" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#999"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
+        </View>
+        {errors.email && (
+          <View style={styles.errorRow}>
+            <Icon name="alert-circle" size={13} color="#F44336" style={styles.errorIcon} />
+            <Text style={styles.error}>{errors.email}</Text>
+          </View>
         )}
-      </TouchableOpacity>
 
+        {/* Password field */}
+        <View style={[styles.inputContainer, errors.password && styles.inputContainerError]}>
+          <Icon name="lock-closed-outline" size={18} color="#999" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#999"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Icon name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#999" />
+          </TouchableOpacity>
+        </View>
+        {errors.password && (
+          <View style={styles.errorRow}>
+            <Icon name="alert-circle" size={13} color="#F44336" style={styles.errorIcon} />
+            <Text style={styles.error}>{errors.password}</Text>
+          </View>
+        )}
 
-      {/* Google sign-in button end */}
+        {errors.firebase && (
+          <View style={styles.firebaseErrorBox}>
+            <Icon name="information-circle" size={16} color="#F44336" style={styles.errorIcon} />
+            <Text style={styles.errorCenter}>{errors.firebase}</Text>
+          </View>
+        )}
 
-      <TouchableOpacity onPress={handleForgotPassword}>
-        <Text style={styles.link}>Forgot Password?</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
+          onPress={handleLogin}
+          disabled={loading}
+          activeOpacity={0.8}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Sign In</Text>
+          )}
+        </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-        <Text style={styles.link}>Don’t have an account? Sign up</Text>
-      </TouchableOpacity>
+        <TouchableOpacity onPress={handleForgotPassword} style={styles.linkTouchable}>
+          <Text style={styles.link}>Forgot Password?</Text>
+        </TouchableOpacity>
 
+        <TouchableOpacity onPress={() => navigation.navigate('Signup')} style={styles.linkTouchable}>
+          <Text style={styles.linkMuted}>
+            Don't have an account? <Text style={styles.linkAccent}>Sign up</Text>
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -254,55 +285,89 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: 'rgb(255, 255, 255)',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f5f6fa',
-    alignItems: 'center'
   },
   image: {
-    width: 390,
-    height: 390,
+    width: 160,
+    height: 160,
     resizeMode: 'cover',
   },
   imageContainer: {
-    width: 295,
-    height: 295,
-    borderRadius: 300,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     overflow: 'hidden',
-    marginBottom: 10,
+    marginBottom: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#4CAF5015',
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 15,
     textAlign: 'center',
-    color: '#2f3640',
+    color: '#333',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 24,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    backgroundColor: '#f9f9f9',
+    paddingHorizontal: 14,
+    marginTop: 8,
+  },
+  inputContainerError: {
+    borderColor: '#F44336',
+    backgroundColor: '#F4433608',
+  },
+  inputIcon: {
+    marginRight: 10,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#dcdde1',
-    borderRadius: 10,
-    padding: 12,
-    marginVertical: 8,
+    flex: 1,
+    paddingVertical: 13,
     fontSize: 16,
-    width: '100%',
-    backgroundColor: '#fff',
-    color: '#000',
+    color: '#333',
   },
   button: {
     width: '100%',
-    marginTop: 15,
-    backgroundColor: 'rgb(4,118,40)',
-    paddingVertical: 14,
-    borderRadius: 10,
+    marginTop: 20,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 15,
+    borderRadius: 20,
     alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   divider: {
     flexDirection: 'row',
@@ -313,32 +378,62 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#dcdde1',
+    backgroundColor: '#eee',
   },
   dividerText: {
     marginHorizontal: 15,
-    color: '#888',
-    fontSize: 14,
-    fontWeight: '500',
+    color: '#999',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  linkTouchable: {
+    marginTop: 16,
   },
   link: {
-    color: '#0984e3',
+    color: '#4CAF50',
     textAlign: 'center',
-    marginTop: 15,
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  linkMuted: {
+    color: '#888',
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  linkAccent: {
+    color: '#4CAF50',
+    fontWeight: '700',
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 6,
+    paddingLeft: 4,
+  },
+  errorIcon: {
+    marginRight: 5,
   },
   error: {
-    color: "red",
-    fontSize: 13,
-    marginTop: -2,
-    marginBottom: 4,
+    color: '#F44336',
+    fontSize: 12,
+  },
+  firebaseErrorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F4433612',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     width: '100%',
+    marginTop: 12,
   },
   errorCenter: {
-    color: "red",
-    fontSize: 14,
+    color: '#F44336',
+    fontSize: 13,
     textAlign: 'center',
-    marginVertical: 6,
-    width: '100%',
+    flexShrink: 1,
   },
 });

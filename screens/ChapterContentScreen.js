@@ -9,6 +9,9 @@ import { WebView } from 'react-native-webview';
 import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useLanguage } from '../components/LanguageContext';
+import Icon from 'react-native-vector-icons/Ionicons';
+// If using Expo instead of react-native-vector-icons, use this import:
+// import Icon from '@expo/vector-icons/Ionicons';
 
 const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslateY }) => {
 
@@ -17,7 +20,6 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
   const { width } = useWindowDimensions();
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
-  // const [language, setLanguage] = useState(paramLang); // ✅ Direct initialization instead of null
   const [currentChapterId, setCurrentChapterId] = useState(chapterId);
   const [maxChapterId, setMaxChapterId] = useState(0);
   const { fontSize, increaseFont, decreaseFont } = useFontSize();
@@ -49,27 +51,32 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
     true;
   `, [fontSize]);
 
-  // const injectedJS = useMemo(() => `
-  //   window.addEventListener('scroll', () => {
-  //     window.ReactNativeWebView.postMessage(window.scrollY.toString());
-  //   });
-  //   true;
-  // `, []); // No dependencies since this script doesn't change
-
+  // Injected once on load. Sends scroll position for hide/show behavior, and
+  // a dedicated tap signal to bring the UI back.
+  //
+  // FIX: iOS WKWebView can be unreliable firing `click` on non-interactive
+  // elements like <body>/<div> unless the cursor style signals "clickable",
+  // and `click` alone can also be delayed/dropped compared to native touch
+  // events. We now also listen for `touchend` as a fallback, and set
+  // `cursor: pointer` on the body so Safari treats the whole page as tappable.
   const injectedJS = useMemo(() => `
+    document.body.style.cursor = 'pointer';
+
     window.addEventListener('scroll', () => {
       window.ReactNativeWebView.postMessage(JSON.stringify({
         type: 'scroll',
         scrollY: window.scrollY
       }));
-    });
-    
-    window.addEventListener('click', () => {
-      window.ReactNativeWebView.postMessage(JSON.stringify({
-        type: 'tap'
-      }));
-    });
-`, []);
+    }, { passive: true });
+
+    function sendTap() {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'tap' }));
+    }
+
+    document.addEventListener('click', sendTap);
+    document.addEventListener('touchend', sendTap);
+    true;
+  `, []);
 
   // ✅ Memoize functions to prevent recreating on every render
   const updateFontSizeInWebView = useCallback((fontSize) => {
@@ -110,54 +117,40 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
     });
   }, [toggleTabBar, navigation]);
 
+  // FIX: taps and scrolls are now handled as two clearly separate branches.
+  // Previously, a `tap` message (which has no `scrollY`) fell through the
+  // same delta/debounce checks used for `scroll` messages. That meant a tap
+  // arriving shortly after the last scroll event (the exact moment a user
+  // taps to bring the UI back after it just hid) could get silently
+  // swallowed by the debounce guard, leaving the header/tab bar stuck
+  // hidden. Taps now always show the UI immediately, with no debounce.
   const handleWebViewMessage = useCallback((event) => {
-    // const scrollY = Number(event.nativeEvent.data);
-    // Alert.alert("Tapped!", event.nativeEvent.data);
-    // added for getting tap events
     const data = JSON.parse(event.nativeEvent.data);
     const { type, scrollY } = data;
     console.log("Message from WebView:", data);
-    // added for getting tap events
-
 
     const now = Date.now();
-    const delta = scrollY - lastScrollY.current;
-    console.log("DELTA", delta.toString());
-    if (Math.abs(delta) < MIN_SCROLL_DELTA || now - lastToggleTime.current < SCROLL_DEBOUNCE_MS) {
+
+    if (type === 'tap') {
+      toggleUI(true);
+      lastToggleTime.current = now;
       return;
     }
- 
-    if (type === 'tap') {
-      // Always show UI on tap
-      toggleUI(true);
-      // return;
-    }
-    // else if (type === 'scroll') {
- 
-    //   console.log("scrolling...." + scrollY);
-    //   if (scrollY < 10) {
-    //     // Always show UI when scrolled to top
-    //     console.log("Scrolled to top, showing UI");
-    //     toggleUI(true);
-    //     // lastScrollY.current = scrollY;
-    //     // lastToggleTime.current = now;
-    //     // return;
-    //   }
-      else if ((delta > 0 || delta < 0) && (type === 'scroll')) {
-      toggleUI(false);
-      // return;
-      } 
-        // // Hide UI when scrolling down (but not at the top)
-        // else if (delta > 0 && Math.abs(delta) > MIN_SCROLL_DELTA && now - lastToggleTime.current > SCROLL_DEBOUNCE_MS) {
-        //   toggleUI(false);
-        //   lastToggleTime.current = now;
-        // }
-    // else if (delta < 0) {
-    //   toggleUI(true);
-    // }
 
-    lastScrollY.current = scrollY;
-    lastToggleTime.current = now;
+    if (type === 'scroll') {
+      const delta = scrollY - lastScrollY.current;
+      lastScrollY.current = scrollY;
+      console.log("DELTA", delta.toString());
+
+      if (Math.abs(delta) < MIN_SCROLL_DELTA || now - lastToggleTime.current < SCROLL_DEBOUNCE_MS) {
+        return;
+      }
+
+      if (delta !== 0) {
+        toggleUI(false);
+        lastToggleTime.current = now;
+      }
+    }
   }, [toggleUI]);
 
   const handleLoadEnd = useCallback(() => {
@@ -170,12 +163,17 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
     if (!showUI) toggleUI(true);
   }, [showUI, toggleUI]);
 
-  // ✅ Separate useEffect for language initialization - prevents unnecessary re-runs
-  // useEffect(() => {
-  //   if (paramLang && paramLang !== language) {
-  //     setLanguage(paramLang);
-  //   }
-  // }, [paramLang]); // Only depend on paramLang, not language to avoid loops
+  // Safety net: if this tab is reached directly (e.g. a first-time user taps
+  // the ChapterContent tab bar icon before ever selecting a language),
+  // redirect to the Language selector instead of sitting on a spinner
+  // forever with no way to pick a language.
+  useEffect(() => {
+    if (isLanguageLoading) return;
+    if (!language) {
+      console.log("ChapterContentScreen: no language set, redirecting to Language tab");
+      navigation.navigate('Language');
+    }
+  }, [language, isLanguageLoading, navigation]);
 
   // ✅ Main data loading effect - only run when language changes
   useEffect(() => {
@@ -211,8 +209,21 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
   useEffect(() => {
     console.log("Chapter ID changed to: " + chapterId);
     setCurrentChapterId(chapterId);
+  }, [chapterId]);
+
+  // FIX: only persist "lastReadChapter" once a language is actually set.
+  // Previously this ran unconditionally on mount, which meant a first-time
+  // user who tapped the ChapterContent tab before ever picking a language
+  // would silently write lastReadChapter=1 to AsyncStorage. On the next app
+  // launch, TabNavigator would then read that value and boot straight into
+  // ChapterContent instead of Sections — skipping the only screen that
+  // redirects first-time users to the Language selector, so the app got
+  // stuck on a permanent loading spinner with no way back to language
+  // selection.
+  useEffect(() => {
+    if (!language) return;
     saveLastReadChapter(chapterId);
-  }, [chapterId, saveLastReadChapter]);
+  }, [chapterId, language, saveLastReadChapter]);
 
   // ✅ Memoize WebView HTML content - prevents unnecessary WebView reloads
   const webViewHTML = useMemo(() => {
@@ -231,11 +242,9 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
       <View style={{ flex: 1 }}>
         <View style={styles.container}>
           {loading || !contentMap[chapterId]?.content ? (
-            <View style={{ alignItems: 'center' }}>
-              <ActivityIndicator size="large" color="green" />
-              <Text style={{ marginTop: 10, fontSize: 18, color: 'gray' }}>
-                Loading content...
-              </Text>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="green" style={styles.spinner} />
+              <Text style={styles.loadingText}>Loading content...</Text>
             </View>
           ) : (
             <View style={{ flex: 1 }}>
@@ -273,15 +282,17 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
         <TouchableOpacity
           onPress={() => goToChapter(currentChapterId - 1)}
           disabled={currentChapterId <= 1}
+          activeOpacity={0.7}
           style={[styles.circleButton, currentChapterId <= 1 && styles.disabledButton]}>
-          <Text style={styles.arrowText}>‹</Text>
+          <Icon name="chevron-back" size={24} color="white" />
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => goToChapter(currentChapterId + 1)}
           disabled={currentChapterId >= maxChapterId}
+          activeOpacity={0.7}
           style={[styles.circleButton, currentChapterId >= maxChapterId && styles.disabledButton]}>
-          <Text style={styles.arrowText}>›</Text>
+          <Icon name="chevron-forward" size={24} color="white" />
         </TouchableOpacity>
       </Animated.View>
 
@@ -290,50 +301,20 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 5 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
-  content: { fontSize: 30, textAlign: 'justify', color:'red' },
-  content_id: { fontSize: 15, textAlign: 'justify', color:'black' },
-  webview: {
+  container: { flex: 1, padding: 5, backgroundColor: 'rgb(255, 255, 255)' },
+  loadingContainer: {
     flex: 1,
-    borderWidth: 2,
-    borderColor: 'red',
-  },
-  controls: {
-    flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
-    padding: 10,
-    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
   },
-  fontButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+  spinner: {
+    marginBottom: 12,
   },
-  buttonText: {
-    color: '#fff',
+  loadingText: {
     fontSize: 16,
-    fontWeight: 'bold',
-  },
-  navButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-    paddingHorizontal: 20,
-  },
-  navButton: {
-    padding: 10,
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-  },
-  navText: {
-    color: 'white',
-    fontSize: 16,
-  },
-  disabledButton: {
-    backgroundColor: '#ccc',
+    color: '#666',
+    fontWeight: '500',
+    textAlign: 'center',
   },
   navContainer: {
     position: 'absolute', 
@@ -348,21 +329,19 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgb(4, 118, 40)',
+    backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
+    elevation: 4,
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    opacity: 0.7,
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
-  arrowText: {
-    color: 'white',
-    fontSize: 28,
-    fontWeight: 'bold',
-    lineHeight: 28,
+  disabledButton: {
+    backgroundColor: '#ccc',
+    shadowOpacity: 0,
+    elevation: 0,
   },
 });
 

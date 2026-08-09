@@ -1,32 +1,64 @@
 import React, { lazy, useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Alert, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, ActivityIndicator, Alert, StyleSheet, SectionList, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
 import { useLanguage } from '../components/LanguageContext';
 import RNFS from 'react-native-fs';
 import { getDBConnection_local } from '../database/Database';
-
-// import RNFS from 'react-native-fs'; // If you're using RNFS for file checking
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import Icon from 'react-native-vector-icons/Ionicons';
+// If using Expo instead of react-native-vector-icons, use this import:
+// import Icon from '@expo/vector-icons/Ionicons';
 
 const LANGUAGE_OPTIONS = [
   { label: 'English', value: 'english' },
   { label: 'Nepali', value: 'nepali' },
   { label: 'हिन्दी', value: 'hindi' },
-  { label: 'తెలుగు', value: 'telugu' },
+  // { label: 'తెలుగు', value: 'telugu' },
+  // { label: 'Kiswahili', value: 'swahili' },
   // Add more as needed 
 ];
 
 export default function LanguageSelectorScreen({ navigation }) {
   const { isFirstTime, language, setLanguage, isLoading: isLanguageLoading } = useLanguage();
   const [loading, setLoading] = useState(false);
-  const [downloadStatus, setDownloadStatus] = useState({}); // Track download status for each language
+  const [downloadStatus, setDownloadStatus] = useState({});
   const [checkingFiles, setCheckingFiles] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Show different UI for first-time vs changing language
+  // Actual rendered height of the bottom tab bar (includes safe-area adjustments).
+  // NOTE: this only works if LanguageSelectorScreen is rendered inside a
+  // Tab.Navigator (directly, or nested inside a Stack that itself sits inside
+  // the tab navigator). If this screen is NOT under a Tab.Navigator, this hook
+  // will throw — swap for useSafeAreaInsets() + a fixed estimate instead.
+  const tabBarHeight = useBottomTabBarHeight();
+
   const title = isFirstTime 
     ? 'Welcome! Please select your language' 
     : 'Change Language';
+
+  // Filter first, then bucket into sections: Downloaded / Downloading / Available
+  const filteredOptions = LANGUAGE_OPTIONS.filter((option) =>
+    option.label.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  );
+
+  const downloadedItems = filteredOptions.filter(
+    (opt) => downloadStatus[opt.value] === 'downloaded'
+  );
+  const downloadingItems = filteredOptions.filter(
+    (opt) => downloadStatus[opt.value] === 'downloading'
+  );
+  const availableItems = filteredOptions.filter((opt) => {
+    const status = downloadStatus[opt.value];
+    return status !== 'downloaded' && status !== 'downloading';
+  });
+
+  const sections = [
+    ...(downloadedItems.length > 0 ? [{ title: 'Downloaded', data: downloadedItems }] : []),
+    ...(downloadingItems.length > 0 ? [{ title: 'Downloading', data: downloadingItems }] : []),
+    ...(availableItems.length > 0 ? [{ title: 'Available to Download', data: availableItems }] : []),
+  ];
 
   const handleLanguageChange = async (selectedLanguage) => {
     setLoading(true);
@@ -34,7 +66,6 @@ export default function LanguageSelectorScreen({ navigation }) {
       console.log("Selected Language: " + selectedLanguage);
       const languageLowerCase = selectedLanguage.toLowerCase();
       
-      // Check if database exists before proceeding
       const exists = await checkFileExists(languageLowerCase);
       
       if (!exists && !isFirstTime) {
@@ -62,7 +93,6 @@ export default function LanguageSelectorScreen({ navigation }) {
       if (exists) {
         navigation.navigate('Sections', { language: languageLowerCase });
       } else {
-        // For first-time users, proceed to sections (they'll download there)
         navigation.navigate('Sections', { language: languageLowerCase });
       }
 
@@ -77,12 +107,6 @@ export default function LanguageSelectorScreen({ navigation }) {
   // Function to check if database file exists for a language
   const checkFileExists = async (languageCode) => {
     try {
-      // // Option 1: If you have a custom function to check DB existence
-      // const exists = await checkDatabaseExists(languageCode);
-      // return exists;
-
-      // Option 2: If you're using RNFS to check file system
-      // const dbPath = `${RNFS.DocumentDirectoryPath}/${languageCode}.db`;
       const dbPath = Platform.OS === 'ios' 
       ? `${RNFS.LibraryDirectoryPath}/${languageCode}.db`
       : `${RNFS.DocumentDirectoryPath}/${languageCode}.db`;
@@ -90,18 +114,13 @@ export default function LanguageSelectorScreen({ navigation }) {
       console.log(`Database file for ${languageCode} exists:`, exists);
       console.log('Checked path:', dbPath);
       return exists;
-
-      // Option 3: If you're using AsyncStorage to track downloads
-      // const downloaded = await AsyncStorage.getItem(`db_downloaded_${languageCode}`);
-      // return downloaded === 'true';
-
     } catch (error) {
       console.error('Error checking file existence for', languageCode, ':', error);
       return false;
     }
   };
 
-  // Function to download database (you'll implement this based on your download logic)
+  // Function to download database
   const downloadDatabase = async (languageCode) => {
     try {
       setDownloadStatus(prev => ({
@@ -109,10 +128,6 @@ export default function LanguageSelectorScreen({ navigation }) {
         [languageCode]: 'downloading'
       }));
 
-      // Your download logic here
-      // await downloadDatabaseFile(languageCode);
-      
-      // For now, simulate download
       await getDBConnection_local(languageCode);
       await new Promise(resolve => setTimeout(resolve, 2000));
       
@@ -121,7 +136,6 @@ export default function LanguageSelectorScreen({ navigation }) {
         [languageCode]: 'downloaded'
       }));
 
-      // Mark as downloaded in AsyncStorage
       await AsyncStorage.setItem(`db_downloaded_${languageCode}`, 'true');
       
     } catch (error) {
@@ -133,6 +147,10 @@ export default function LanguageSelectorScreen({ navigation }) {
       throw error;
     }
   };
+
+  useEffect(() => {
+    console.log("LanguageSelectorScreen mounted");
+  }, []);
 
   // Check file existence for all languages on component mount
   useEffect(() => {
@@ -161,21 +179,37 @@ export default function LanguageSelectorScreen({ navigation }) {
     console.log("LanguageSelectorScreen mounted");
   }, []);
 
-  // Get icon based on download status
-  const getStatusIcon = (languageValue) => {
+  // Icon name based on download status
+  const getStatusIconName = (languageValue) => {
     const status = downloadStatus[languageValue];
-    
     switch (status) {
       case 'downloaded':
-        return '✅'; // Downloaded
+        return 'checkmark-circle';
       case 'downloading':
-        return '⏬'; // Downloading
+        return 'cloud-download';
       case 'not_downloaded':
-        return '⬇️'; // Not downloaded
+        return 'cloud-download-outline';
       case 'error':
-        return '❌'; // Error
+        return 'alert-circle';
       default:
-        return '❓'; // Checking
+        return 'help-circle-outline';
+    }
+  };
+
+  // Color based on download status
+  const getStatusColor = (languageValue) => {
+    const status = downloadStatus[languageValue];
+    switch (status) {
+      case 'downloaded':
+        return '#4CAF50';
+      case 'downloading':
+        return '#2196F3';
+      case 'not_downloaded':
+        return '#FFA726';
+      case 'error':
+        return '#F44336';
+      default:
+        return '#999';
     }
   };
 
@@ -230,6 +264,7 @@ export default function LanguageSelectorScreen({ navigation }) {
           }
         }}
         disabled={loading || isDownloading}
+        activeOpacity={0.8}
       >
         <View style={styles.languageItem}>
           <View style={styles.languageInfo}>
@@ -247,11 +282,15 @@ export default function LanguageSelectorScreen({ navigation }) {
           </View>
           
           <View style={styles.statusContainer}>
-            <Text style={styles.statusIcon}>
-              {getStatusIcon(item.value)}
-            </Text>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.value) + '20' }]}>
+              <Icon 
+                name={getStatusIconName(item.value)} 
+                size={16} 
+                color={getStatusColor(item.value)} 
+              />
+            </View>
             {isDownloading && (
-              <ActivityIndicator size="small" color="green" style={styles.smallSpinner} />
+              <ActivityIndicator size="small" color="#2196F3" style={styles.smallSpinner} />
             )}
           </View>
         </View>
@@ -259,6 +298,7 @@ export default function LanguageSelectorScreen({ navigation }) {
         {!isDownloaded && !isDownloading && (
           <TouchableOpacity 
             style={styles.downloadButton}
+            activeOpacity={0.7}
             onPress={async () => {
               try {
                 await downloadDatabase(item.value);
@@ -267,12 +307,19 @@ export default function LanguageSelectorScreen({ navigation }) {
               }
             }}
           >
+            <Icon name="download-outline" size={16} color="white" style={styles.downloadButtonIcon} />
             <Text style={styles.downloadButtonText}>Download</Text>
           </TouchableOpacity>
         )}
       </TouchableOpacity>
     );
   };
+
+  const renderSectionHeader = ({ section: { title } }) => (
+    <View style={styles.sectionHeaderContainer}>
+      <Text style={styles.sectionHeaderText}>{title}</Text>
+    </View>
+  );
 
   return (
     <AppLayout>
@@ -285,12 +332,45 @@ export default function LanguageSelectorScreen({ navigation }) {
           </Text>
         )}
 
-        <FlatList
-          data={LANGUAGE_OPTIONS}
-          keyExtractor={(item) => item.value}
-          renderItem={renderLanguageItem}
-          style={styles.languageList}
-        />
+        {/* Search bar */}
+        <View style={styles.searchContainer}>
+          <Icon name="search-outline" size={18} color="#999" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search languages..."
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCorrect={false}
+            autoCapitalize="none"
+            clearButtonMode="while-editing"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity 
+              style={styles.clearButton}
+              onPress={() => setSearchQuery('')}
+            >
+              <Icon name="close-circle" size={18} color="#999" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {sections.length === 0 ? (
+          <View style={styles.noResultsContainer}>
+            <Text style={styles.noResultsText}>No languages found matching "{searchQuery}"</Text>
+          </View>
+        ) : (
+          <SectionList
+            sections={sections}
+            keyExtractor={(item) => item.value}
+            renderItem={renderLanguageItem}
+            renderSectionHeader={renderSectionHeader}
+            style={styles.languageList}
+            contentContainerStyle={{ paddingBottom: tabBarHeight + 20 }}
+            keyboardShouldPersistTaps="handled"
+            stickySectionHeadersEnabled={false}
+          />
+        )}
 
         {loading && (
           <View style={styles.globalLoadingOverlay}>
@@ -327,6 +407,51 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     fontStyle: 'italic'
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    fontSize: 16,
+    color: '#333',
+  },
+  clearButton: {
+    padding: 6,
+  },
+  noResultsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 40,
+  },
+  noResultsText: {
+    fontSize: 15,
+    color: '#888',
+    textAlign: 'center',
+  },
+  sectionHeaderContainer: {
+    backgroundColor: 'rgb(255, 255, 255)',
+    paddingTop: 12,
+    paddingBottom: 6,
+  },
+  sectionHeaderText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#888',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   languageList: {
     flex: 1,
@@ -382,25 +507,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  statusIcon: {
-    fontSize: 20,
+  statusBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginLeft: 8,
   },
   smallSpinner: {
     marginLeft: 8,
   },
   downloadButton: {
-    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
     backgroundColor: '#4CAF50',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     alignSelf: 'flex-start',
+    shadowColor: '#4CAF50',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  downloadButtonIcon: {
+    marginRight: 6,
   },
   downloadButtonText: {
     color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   loadingText: {
     marginTop: 10,

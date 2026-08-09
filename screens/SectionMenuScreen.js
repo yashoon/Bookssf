@@ -5,6 +5,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDBConnection_local, getUsers } from '../database/Database';
 import { useLanguage } from '../components/LanguageContext';
 import { ProgressBar } from '@react-native-community/progress-bar-android';
+import Icon from 'react-native-vector-icons/Ionicons';
+// If using Expo instead of react-native-vector-icons, use this import:
+// import Icon from '@expo/vector-icons/Ionicons';
+
+// Friendly display labels for language codes (keep in sync with LanguageSelectorScreen)
+const LANGUAGE_LABELS = {
+  english: 'English',
+  nepali: 'Nepali',
+  hindi: 'हिन्दी',
+  telugu: 'తెలుగు',
+  swahili: 'Kiswahili',
+};
+
+const getLanguageLabel = (code) => {
+  if (!code) return '';
+  return LANGUAGE_LABELS[code] || code.charAt(0).toUpperCase() + code.slice(1);
+};
 
 const SectionMenuScreen = ({ navigation, route }) => {
   const [lastReadChapter, setLastReadChapter] = useState(null);
@@ -21,18 +38,53 @@ const SectionMenuScreen = ({ navigation, route }) => {
       case 'checking':
         return 'Checking language settings...';
       case 'downloading':
-        return 'Downloading database from internet...';
+        return 'Downloading database...';
       case 'processing':
-        return 'Processing sections...';
+        return 'Preparing your sections...';
       case 'complete':
-        return 'Loading complete!';
+        return 'All set!';
       default:
         return 'Loading...';
     }
   };
 
+  // Icon shown next to the loading message, matching the status-icon language
+  // used on the Language Selector screen
+  const getLoadingIconName = () => {
+    switch (loadingStage) {
+      case 'checking':
+        return 'help-circle-outline';
+      case 'downloading':
+        return 'cloud-download';
+      case 'processing':
+        return 'sync';
+      case 'complete':
+        return 'checkmark-circle';
+      case 'error':
+        return 'alert-circle';
+      default:
+        return 'ellipse-outline';
+    }
+  };
+
+  const getLoadingIconColor = () => {
+    switch (loadingStage) {
+      case 'downloading':
+        return '#2196F3';
+      case 'processing':
+        return '#FFA726';
+      case 'complete':
+        return '#4CAF50';
+      case 'error':
+        return '#F44336';
+      default:
+        return '#999';
+    }
+  };
+
   const fetchLanguage_new = async () => {
     if (!hasLanguageSet) {
+      console.log("SectionMenuScreen: no language set, redirecting to Language tab");
       // This screen needs language - redirect to language selector
       navigation.navigate('Language');
       return;
@@ -86,8 +138,9 @@ const SectionMenuScreen = ({ navigation, route }) => {
     }
   };
 
+  // Fetch last read chapter from AsyncStorage — independent of language
+  // state, safe to run once on mount.
   useEffect(() => {
-    // Fetch last read chapter from AsyncStorage
     const fetchLastRead = async () => {
       try {
         const stored = await AsyncStorage.getItem('lastReadChapter');
@@ -100,23 +153,28 @@ const SectionMenuScreen = ({ navigation, route }) => {
     };
 
     fetchLastRead();
-    
-    // Only fetch if language is available
-    if (hasLanguageSet && language && !isLanguageLoading) {
-      fetchLanguage_new();
-    } else if (!hasLanguageSet && !isLanguageLoading) {
-      // No language set, redirect
-      navigation.navigate('Language');
-    }
   }, []);
 
+  // Single source of truth for language-driven behavior. Waits until
+  // LanguageContext has actually resolved (isLanguageLoading === false)
+  // before deciding anything, then either redirects to language selection
+  // or fetches sections — covering every case, including "loading just
+  // finished and there's still no language set," which previously had no
+  // effect listening for it and left the screen stuck.
   useEffect(() => {
-    // Re-fetch when language changes
-    if (language && hasLanguageSet && !isLanguageLoading) {
-      console.log("Language changed, re-fetching sections for: " + language);
+    if (isLanguageLoading) return;
+
+    if (!hasLanguageSet) {
+      console.log("SectionMenuScreen: no language set, redirecting to Language tab");
+      navigation.navigate('Language');
+      return;
+    }
+
+    if (language) {
+      console.log("Fetching sections for language: " + language);
       setLoading(true);
       setLoadingStage('checking');
-      setSections([]); // Clear existing sections
+      setSections([]);
       fetchLanguage_new();
     }
   }, [language, hasLanguageSet, isLanguageLoading]);
@@ -138,10 +196,21 @@ const SectionMenuScreen = ({ navigation, route }) => {
     return (
       <AppLayout>
         <View style={[styles.container, styles.loadingContainer]}>
-          <Text style={styles.title}>Sections of the Book</Text>
+          <Text style={styles.title}>Book Sections</Text>
+          {language && (
+            <Text style={styles.subtitle}>Getting things ready in {getLanguageLabel(language)}</Text>
+          )}
           
           <View style={styles.progressContainer}>
-            <Text style={styles.loadingText}>{getLoadingMessage()}</Text>
+            <View style={styles.loadingMessageRow}>
+              <Icon
+                name={getLoadingIconName()}
+                size={18}
+                color={getLoadingIconColor()}
+                style={styles.loadingMessageIcon}
+              />
+              <Text style={styles.loadingText}>{getLoadingMessage()}</Text>
+            </View>
             
             <ActivityIndicator 
               size="large" 
@@ -156,20 +225,13 @@ const SectionMenuScreen = ({ navigation, route }) => {
                 </Text>
                 
                 {Platform.OS === 'android' ? (
-                  // <ProgressBarAndroid
-                  //   styleAttr="Horizontal"
-                  //   indeterminate={false}
-                  //   progress={downloadProgress / 100}
-                  //   color="green"
-                  //   style={styles.progressBar}
-                  // />
                   <View style={styles.example}>
-                  <Text>Horizontal Progress Indicator</Text>
-                  <ProgressBar styleAttr="Horizontal"
-                  animating={true}
-                  color="red" />
-                </View>
-          
+                    <ProgressBar
+                      styleAttr="Horizontal"
+                      animating={true}
+                      color="#2196F3"
+                    />
+                  </View>
                 ) : (
                   // iOS progress bar alternative
                   <View style={styles.progressBarIOS}>
@@ -191,9 +253,21 @@ const SectionMenuScreen = ({ navigation, route }) => {
             )}
             
             {loadingStage === 'complete' && (
-              <Text style={[styles.subText, { color: 'green' }]}>
-                ✓ Ready to go!
-              </Text>
+              <View style={styles.completeRow}>
+                <Icon name="checkmark-circle" size={16} color="#4CAF50" style={styles.completeIcon} />
+                <Text style={[styles.subText, { color: '#4CAF50', fontStyle: 'normal', fontWeight: '600' }]}>
+                  Ready to go!
+                </Text>
+              </View>
+            )}
+
+            {loadingStage === 'error' && (
+              <View style={styles.completeRow}>
+                <Icon name="alert-circle" size={16} color="#F44336" style={styles.completeIcon} />
+                <Text style={[styles.subText, { color: '#F44336', fontStyle: 'normal', fontWeight: '600' }]}>
+                  Something went wrong. Please try again.
+                </Text>
+              </View>
             )}
           </View>
         </View>
@@ -205,22 +279,31 @@ const SectionMenuScreen = ({ navigation, route }) => {
   return (
     <AppLayout>
       <View style={styles.container}>
-        <Text style={styles.title}>Sections of the Book</Text>
+        <Text style={styles.title}>Book Sections</Text>
         
-        {/* Show current language for debugging */}
-        <Text style={styles.debugText}>Language: {language}</Text>
+        {language && (
+          <View style={styles.languageBadgeContainer}>
+            <View style={styles.languageBadge}>
+              <Icon name="language-outline" size={14} color="#4CAF50" style={styles.languageBadgeIcon} />
+              <Text style={styles.languageBadgeText}>{getLanguageLabel(language)}</Text>
+            </View>
+          </View>
+        )}
 
         {sections.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No Sections Available</Text>
+            <Icon name="file-tray-outline" size={40} color="#bbb" style={{ marginBottom: 12 }} />
+            <Text style={styles.emptyText}>No sections available yet</Text>
             <TouchableOpacity 
               style={styles.retryButton}
+              activeOpacity={0.7}
               onPress={() => {
                 setLoading(true);
                 setLoadingStage('checking');
                 fetchLanguage_new();
               }}
             >
+              <Icon name="refresh-outline" size={16} color="white" style={styles.retryButtonIcon} />
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
           </View>
@@ -229,6 +312,7 @@ const SectionMenuScreen = ({ navigation, route }) => {
             <TouchableOpacity
               key={section.section_id}
               style={styles.sectionButton}
+              activeOpacity={0.8}
               onPress={() =>
                 navigation.navigate('ChapterList', {
                   section: section.section_id,
@@ -236,7 +320,11 @@ const SectionMenuScreen = ({ navigation, route }) => {
                 })
               }
             >
+              <View style={styles.sectionIconBadge}>
+                <Icon name="book-outline" size={18} color="#4CAF50" />
+              </View>
               <Text style={styles.sectionText}>{section.section_name}</Text>
+              <Icon name="chevron-forward" size={20} color="#bbb" />
             </TouchableOpacity>
           ))
         )}
@@ -248,7 +336,7 @@ const SectionMenuScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafafa',
+    backgroundColor: 'rgb(255, 255, 255)',
     paddingHorizontal: 20,
     paddingTop: 20,
   },
@@ -257,21 +345,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 4,
     textAlign: 'center',
-    marginBottom: 40,
     color: '#333',
+  },
+  subtitle: {
+    fontSize: 15,
+    color: 'gray',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontStyle: 'italic',
   },
   progressContainer: {
     alignItems: 'center',
     width: '100%',
     paddingHorizontal: 20,
   },
+  loadingMessageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  loadingMessageIcon: {
+    marginRight: 6,
+  },
   loadingText: {
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
-    marginBottom: 20,
     color: '#666',
     fontWeight: '500',
   },
@@ -281,20 +384,17 @@ const styles = StyleSheet.create({
   progressWrapper: {
     width: '100%',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 12,
   },
   progressText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#333',
     marginBottom: 10,
     fontWeight: '600',
   },
-  progressBar: {
-    width: '80%',
-    height: 8,
-  },
   example: {
-    marginVertical: 24,
+    width: '80%',
+    marginVertical: 4,
   },
   progressBarIOS: {
     width: '80%',
@@ -305,7 +405,7 @@ const styles = StyleSheet.create({
   },
   progressFillIOS: {
     height: '100%',
-    backgroundColor: 'green',
+    backgroundColor: '#2196F3',
     borderRadius: 4,
   },
   subText: {
@@ -315,52 +415,97 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontStyle: 'italic',
   },
+  completeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  completeIcon: {
+    marginRight: 6,
+  },
+  languageBadgeContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  languageBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4CAF5020',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  languageBadgeIcon: {
+    marginRight: 6,
+  },
+  languageBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
   sectionButton: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 20,
-    paddingHorizontal: 30,
-    marginVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    padding: 16,
+    marginVertical: 4,
     borderRadius: 12,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    elevation: 2,
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  sectionIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#4CAF5020',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   sectionText: {
+    flex: 1,
     fontSize: 18,
-    textAlign: 'center',
     color: '#333',
-    fontWeight: '500',
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'center',
-    marginBottom: 10,
-    fontStyle: 'italic',
+    fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 40,
   },
   emptyText: {
-    fontSize: 18,
-    color: '#666',
+    fontSize: 16,
+    color: '#888',
     textAlign: 'center',
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: 'green',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    shadowColor: '#4CAF50',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  retryButtonIcon: {
+    marginRight: 6,
   },
   retryText: {
     color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });
 

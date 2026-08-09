@@ -5,9 +5,9 @@ import ChapterListScreen from '../screens/ChapterListScreen';
 import ChapterContentScreen from '../screens/ChapterContentScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SectionMenuScreen from '../screens/SectionMenuScreen';
-import SearchScreen from '../screens/SearchScreen';
 import LanguageSelectorScreen from '../screens/LanguageSelectorScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import { useLanguage } from '../components/LanguageContext';
 
 //adding animation
 import { BottomTabBar } from '@react-navigation/bottom-tabs';
@@ -46,6 +46,9 @@ const AnimatedTabBar = (props) => {
 const TabNavigator = () => {
 
     const [lastReadChapter, setLastReadChapter] = useState(null);
+    const [isReady, setIsReady] = useState(false); // gate rendering until AsyncStorage read completes
+    const { hasLanguageSet, isLoading: isLanguageLoading } = useLanguage();
+
     const tabBarTranslateY = useRef(new Animated.Value(0)).current;
 
       // Add this function to control the tab bar animation
@@ -58,31 +61,48 @@ const TabNavigator = () => {
     }).start();
   };
 
-    const loadLastReadChapter = async () => {
-      try {
-        console.log("this is Aysnc loading chapterId")
-        const storedChapterId = await AsyncStorage.getItem('lastReadChapter');
-        setLastReadChapter(storedChapterId ? parseInt(storedChapterId) : 1);
+const loadLastReadChapter = async () => {
+  try {
+    const storedChapterId = await AsyncStorage.getItem('lastReadChapter');
+    setLastReadChapter(storedChapterId ? parseInt(storedChapterId, 10) : null);
+  } catch (e) {
+    console.log('Error loading last read chapter:', e);
+  } finally {
+    setIsReady(true); // only now do we know whether to resume or start fresh
+  }
+};
 
-        setLastReadChapter(storedChapterId);
-        // if (storedChapterId) {
-        //   navigation.navigate('ContentScreen', { chapterId: parseInt(storedChapterId) });
-        // }
-      } catch (e) {
-        console.log('Error loading last read chapter:', e);
-      }
-      console.log("this is last read chapter $$$$" + lastReadChapter)
-    };
+useEffect(() => {
+  loadLastReadChapter();
+}, []);
 
-    useEffect(() => {
-        loadLastReadChapter();  
-    }
-    , []);
+// Wait for both the last-read-chapter lookup AND the language context to
+// resolve before deciding where to land. Without waiting on language here,
+// a stale/prematurely-written 'lastReadChapter' value alone could route
+// straight into ChapterContent and skip Sections — the only screen that
+// redirects first-time users (no language set) to the Language selector.
+if (!isReady || isLanguageLoading) return null; // or a small ActivityIndicator, to avoid a flash of the default tab
     console.log("this is last read chapter >>>>>>>" + lastReadChapter)
+
+  // Decide the initial tab directly here, rather than relying on
+  // SectionMenuScreen to redirect via navigation.navigate('Language') after
+  // it mounts. That in-effect redirect was unreliable on the very first
+  // mount (a timing/ordering quirk with the tab navigator settling on its
+  // initial route), which left first-time users staring at a frozen
+  // Sections screen stuck on "Checking language settings...". Choosing the
+  // right tab up front avoids that race entirely.
+  //
+  // Only trust lastReadChapter as a "resume reading" signal if a language
+  // has actually been selected. This guards against any stale AsyncStorage
+  // data bypassing first-time language selection.
+  const initialRouteName = !hasLanguageSet
+    ? 'Language'
+    : (lastReadChapter ? 'ChapterContent' : 'Sections');
 
   return (
     // <FontSizeProvider>
 <Tab.Navigator
+      initialRouteName={initialRouteName}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: 'rgb(4, 118, 40)', // active tab color (purple-ish)
@@ -93,9 +113,9 @@ const TabNavigator = () => {
         },
         // tabBarLabelStyle: { fontSize: 12 }, // label font size
       })}
-      tabBar={(props) => (
-        <AnimatedTabBar {...props} tabBarTranslateY={tabBarTranslateY} />
-      )}
+      // tabBar={(props) => (
+      //   <AnimatedTabBar {...props} tabBarTranslateY={tabBarTranslateY} />
+      // )}
 >
   <Tab.Screen name="Sections" component={SectionMenuScreen}  
       options={{
@@ -108,17 +128,8 @@ const TabNavigator = () => {
   <Tab.Screen name="ChapterList" component={ChapterListScreen} />
 
   <Tab.Screen
-        name="Search"
-        component={SearchScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="search-outline" size={size} color={color} />
-          ),
-        }}
-  />
-
-  <Tab.Screen
         name="ChapterContent"
+        initialParams={{ chapterId: lastReadChapter ?? 1 }}
         // options={{ tabBarButton: () => null }} // optional: hide tab icon if needed 
       >
     {(props) => (
@@ -154,7 +165,7 @@ const TabNavigator = () => {
       }}
       /> */}
 </Tab.Navigator>
-    // </FontSizeProvider>
+    // // </FontSizeProvider>
   );
 };
 
