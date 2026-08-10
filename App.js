@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { ActivityIndicator, View, Text, Platform, Alert } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import SpInAppUpdates, { IAUUpdateKind } from 'sp-react-native-in-app-updates';
 import Toast from 'react-native-toast-message';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -88,28 +89,42 @@ export default function App() {
   }
 
   return (
-    <LanguageProvider>
-      <FontSizeProvider>
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            {!user ? (
-              <>
-                <Stack.Screen name="Login" component={LoginScreen} />
-                <Stack.Screen name="Signup" component={SignupScreen} />
-              </>
-            ) : (
-              <>
-                <Stack.Screen name="Welcome" component={WelcomeScreen} />
-                <Stack.Screen name="Shepherd's Staff" component={TabNavigator} />
-                <Stack.Screen name="Search" component={SearchScreen} />
-              </>
-            )}
-          </Stack.Navigator>
-        </NavigationContainer>
+    // FIX: the app never rendered a real <SafeAreaProvider> anywhere, so
+    // every useSafeAreaInsets() call (the header's top padding in
+    // AppLayout, SearchScreen, and — indirectly — the bottom tab bar's own
+    // padding, which React Navigation pads using insets it gets from this
+    // same context) was falling back to React Navigation's internal
+    // SafeAreaProviderCompat. That fallback is a rough, static estimate,
+    // not the real per-device measurement — close enough on many phones to
+    // go unnoticed, but visibly short on others (different gesture-nav
+    // heights, curved corners, etc.), which is exactly why content was
+    // sitting right up against the edges and bottom bezel only on some
+    // Android phones. A real SafeAreaProvider at the root supplies the
+    // actual measured insets to everything below it.
+    <SafeAreaProvider>
+      <LanguageProvider>
+        <FontSizeProvider>
+          <NavigationContainer>
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              {!user ? (
+                <>
+                  <Stack.Screen name="Login" component={LoginScreen} />
+                  <Stack.Screen name="Signup" component={SignupScreen} />
+                </>
+              ) : (
+                <>
+                  <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                  <Stack.Screen name="Shepherd's Staff" component={TabNavigator} />
+                  <Stack.Screen name="Search" component={SearchScreen} />
+                </>
+              )}
+            </Stack.Navigator>
+          </NavigationContainer>
 
-        {/* ✅ Toast must be here */}
-        <Toast />
-      </FontSizeProvider>
-    </LanguageProvider>
+          {/* ✅ Toast must be here */}
+          <Toast />
+        </FontSizeProvider>
+      </LanguageProvider>
+    </SafeAreaProvider>
   );
 }
