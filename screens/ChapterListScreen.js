@@ -298,11 +298,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     backgroundColor: 'white',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    // FIX: elevation + borderRadius is a known RN 0.77 Android bug — the
+    // shadow renders as a distorted rectangle instead of following the
+    // rounded corners, showing up as a dark box around the card. boxShadow
+    // (New Architecture, already enabled) is correct on both platforms.
+    boxShadow: [{ offsetX: 0, offsetY: 2, blurRadius: 4, color: 'rgba(0, 0, 0, 0.1)' }],
   },
   subchapterCard: {
     marginLeft: 16,
@@ -348,11 +348,7 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '85%',
     alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    boxShadow: [{ offsetX: 0, offsetY: 4, blurRadius: 10, color: 'rgba(0, 0, 0, 0.15)' }],
   },
   modalIconBadge: {
     width: 48,
@@ -385,11 +381,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     paddingVertical: 12,
     borderRadius: 20,
-    shadowColor: '#4CAF50',
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    boxShadow: [{ offsetX: 0, offsetY: 2, blurRadius: 4, color: 'rgba(76, 175, 80, 0.3)' }],
   },
   modalPrimaryButtonText: {
     color: 'white',

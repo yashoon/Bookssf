@@ -146,11 +146,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    // FIX: elevation + borderRadius is a known RN 0.77 Android bug — the
+    // shadow renders as a distorted rectangle instead of following the
+    // rounded corners, showing up as a dark box around the card. boxShadow
+    // (New Architecture, already enabled) is correct on both platforms.
+    boxShadow: [{ offsetX: 0, offsetY: 2, blurRadius: 4, color: 'rgba(0, 0, 0, 0.1)' }],
     overflow: 'hidden',
   },
   infoRow: {

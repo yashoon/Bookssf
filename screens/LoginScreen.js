@@ -352,16 +352,15 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 20,
     alignItems: 'center',
-    shadowColor: '#4CAF50',
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    // FIX: elevation + borderRadius is a known RN 0.77 Android bug — the
+    // shadow renders distorted/rectangular instead of following the rounded
+    // corners, showing up as a dark box around the button. boxShadow (New
+    // Architecture, already enabled) renders correctly on both platforms.
+    boxShadow: [{ offsetX: 0, offsetY: 3, blurRadius: 6, color: 'rgba(76, 175, 80, 0.3)' }],
   },
   buttonDisabled: {
     opacity: 0.6,
-    shadowOpacity: 0,
-    elevation: 0,
+    boxShadow: [],
   },
   buttonText: {
     color: '#fff',
