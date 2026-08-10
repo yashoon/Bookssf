@@ -17,16 +17,37 @@ import { Animated } from 'react-native'; // or react-native if using Animated AP
 
 const Tab = createBottomTabNavigator();
 
-//adding animation 
+//adding animation
+// REVERTED: this custom tab bar was re-enabled to make the bottom bar hide
+// smoothly in sync with the header, but doing so triggered
+// "TypeError: Cannot read property 'forEach' of null" on every tab press —
+// somewhere in React Navigation's own tab-switch handling (its internal
+// transition animation and event-emitter code both do array.forEach over
+// state derived from this navigator's props). It's disabled again
+// (`tabBar` prop below is commented out) so the app is back to the stable,
+// default, always-visible tab bar rather than shipping a crash.
+//
+// The header's hide-on-scroll in ChapterContentScreen has separately been
+// paused too (see the note at the top of that file) — the WebView bridge it
+// depended on couldn't deliver it flicker-free. Both the header and this
+// tab bar staying static for now is intentional; the real fix for both is
+// the same planned follow-up: drop the WebView for chapter content in favor
+// of react-native-render-html + a native ScrollView, which would also let
+// this custom tab bar be revisited with real native scroll events instead
+// of bridged messages.
 const AnimatedTabBar = (props) => {
-  const { state, descriptors, navigation, tabBarTranslateY } = props;
-  
+  const { tabBarTranslateY, onHeightChange, ...tabBarProps } = props;
+  const { state } = tabBarProps;
+  const focusedRouteName = state?.routes?.[state.index]?.name;
+  const isChapterContent = focusedRouteName === 'ChapterContent';
+
   return (
     <Animated.View
+      onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}
       style={{
-        transform: [{ translateY: tabBarTranslateY }],
-        position: 'absolute',
-        bottom: 0,
+        transform: isChapterContent ? [{ translateY: tabBarTranslateY }] : undefined,
+        position: isChapterContent ? 'absolute' : 'relative',
+        bottom: isChapterContent ? 0 : undefined,
         left: 0,
         right: 0,
         backgroundColor: '#fff',
@@ -34,14 +55,12 @@ const AnimatedTabBar = (props) => {
         zIndex: 10,
       }}
     >
-      <BottomTabBar 
-        {...props} // Pass all props to ensure nothing is missing
-      />
+      <BottomTabBar {...tabBarProps} />
     </Animated.View>
   );
 };
 
-//adding animation 
+//adding animation
 
 const TabNavigator = () => {
 
@@ -49,17 +68,11 @@ const TabNavigator = () => {
     const [isReady, setIsReady] = useState(false); // gate rendering until AsyncStorage read completes
     const { hasLanguageSet, isLoading: isLanguageLoading } = useLanguage();
 
+    // Raw px offset (0 = fully shown) — ChapterContentScreen sets this
+    // directly in lockstep with the header, both driven from the same
+    // scroll-progress fraction, so they move together instead of drifting.
     const tabBarTranslateY = useRef(new Animated.Value(0)).current;
-
-      // Add this function to control the tab bar animation
-  const toggleTabBar = (visible) => {
-    console.log("TabNavigator toggling tab bar: " + visible);
-    Animated.timing(tabBarTranslateY, {
-      toValue: visible ? 0 : 100,
-      duration: 350,
-      useNativeDriver: true,
-    }).start();
-  };
+    const [tabBarHeight, setTabBarHeight] = useState(0);
 
 const loadLastReadChapter = async () => {
   try {
@@ -114,10 +127,14 @@ if (!isReady || isLanguageLoading) return null; // or a small ActivityIndicator,
         // tabBarLabelStyle: { fontSize: 12 }, // label font size
       })}
       // tabBar={(props) => (
-      //   <AnimatedTabBar {...props} tabBarTranslateY={tabBarTranslateY} />
+      //   <AnimatedTabBar
+      //     {...props}
+      //     tabBarTranslateY={tabBarTranslateY}
+      //     onHeightChange={setTabBarHeight}
+      //   />
       // )}
 >
-  <Tab.Screen name="Sections" component={SectionMenuScreen}  
+  <Tab.Screen name="Sections" component={SectionMenuScreen}
       options={{
     tabBarIcon: ({ color, size }) => (
       <Icon name="menu-outline" color={color} size={size} />
@@ -130,13 +147,11 @@ if (!isReady || isLanguageLoading) return null; // or a small ActivityIndicator,
   <Tab.Screen
         name="ChapterContent"
         initialParams={{ chapterId: lastReadChapter ?? 1 }}
-        // options={{ tabBarButton: () => null }} // optional: hide tab icon if needed 
+        // options={{ tabBarButton: () => null }} // optional: hide tab icon if needed
       >
     {(props) => (
     <ChapterContentScreen
       {...props}
-      toggleTabBar={toggleTabBar}
-      tabBarTranslateY={tabBarTranslateY}
     />
   )}
   </Tab.Screen>

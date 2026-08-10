@@ -20,6 +20,23 @@ export default function AppLayout({
   showSearchIcon = true,
   showBackButton = false,// optional override; if omitted, auto-detects via navigation.canGoBack()
   showAppLayout = true,
+  // Optional continuous Animated.Value (0 = header fully shown, 1 = fully
+  // hidden), driven directly by a parent screen's real-time scroll position
+  // — e.g. ChapterContentScreen ties this 1:1 to the WebView's scroll
+  // offset, the same way Safari's chrome tracks your finger while
+  // scrolling instead of snapping open/closed after the fact.
+  //
+  // FIX: this replaces the old model where a screen flipped a boolean
+  // (`showAppLayout`) and this component reacted by kicking off a fresh
+  // Animated.parallel of THREE separate JS-driven timings (translateY,
+  // height, opacity) every time. Restarting three independent tweens on
+  // every scroll-driven toggle is exactly what produced the flicker —
+  // under load from the WebView's postMessage bridge, the JS thread could
+  // fall behind and the three properties would visibly drift out of sync
+  // with each other and with the actual scroll. Driving everything from one
+  // externally-updated value keeps them perfectly in lockstep and removes
+  // the repeated start/stop churn entirely.
+  scrollProgress,
 }) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -32,29 +49,37 @@ export default function AppLayout({
 
   const expandedHeaderHeight = insets.top + HEADER_CONTENT_HEIGHT;
 
-  const headerTranslateY = useRef(new Animated.Value(0)).current;
-  const headerHeight = useRef(new Animated.Value(expandedHeaderHeight)).current;
-  const headerOpacity = useRef(new Animated.Value(1)).current;
-
+  // Screens that never dynamically hide the header (everything except
+  // ChapterContentScreen) don't pass scrollProgress at all — fall back to a
+  // static, locally-owned value driven by the legacy showAppLayout boolean
+  // so their behavior is unchanged.
+  const fallbackProgress = useRef(new Animated.Value(showAppLayout ? 0 : 1)).current;
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(headerTranslateY, {
-        toValue: showAppLayout ? 0 : -expandedHeaderHeight,
-        duration: 300,
-        useNativeDriver: false,
-      }),
-      Animated.timing(headerHeight, {
-        toValue: showAppLayout ? expandedHeaderHeight : 0,
-        duration: 300,
-        useNativeDriver: false,
-      }),
-      Animated.timing(headerOpacity, {
-        toValue: showAppLayout ? 1 : 0,
-        duration: 300,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, [showAppLayout, expandedHeaderHeight]);
+    if (scrollProgress) return; // externally driven, nothing to do here
+    Animated.timing(fallbackProgress, {
+      toValue: showAppLayout ? 0 : 1,
+      duration: 250,
+      useNativeDriver: false,
+    }).start();
+  }, [scrollProgress, showAppLayout, fallbackProgress]);
+
+  const progress = scrollProgress || fallbackProgress;
+
+  const headerTranslateY = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -expandedHeaderHeight],
+    extrapolate: 'clamp',
+  });
+  const headerHeight = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [expandedHeaderHeight, 0],
+    extrapolate: 'clamp',
+  });
+  const headerOpacity = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
 
   return (
     <View style={{ flex: 1 }}>
@@ -66,7 +91,13 @@ export default function AppLayout({
           overflow: 'hidden',
         }}
       >
-        <StatusBar barStyle="light-content" backgroundColor="#4CAF50" hidden={!showAppLayout} />
+        {/* FIX: no longer toggling `hidden` off the same boolean — that's a
+            hard, un-animated native show/hide of the whole status bar and
+            was adding its own visible snap on top of the header animation.
+            The status bar now stays put; only the in-app header chrome
+            hides on scroll, matching how Safari keeps the system status bar
+            visible and only collapses its own toolbar. */}
+        <StatusBar barStyle="light-content" backgroundColor="#4CAF50" />
 
         <View style={[styles.header, { paddingTop: insets.top, height: expandedHeaderHeight }]}>
           <View style={styles.headerLeft}>

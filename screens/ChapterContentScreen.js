@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useRef, useMemo, useCallback} from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated, Alert } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { getPreDBConnection, getUsers, getMaxChapterId, getDBConnection_local } from '../database/Database';
 import { useWindowDimensions } from 'react-native';
@@ -7,16 +7,26 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '../components/AppLayout';
 import { WebView } from 'react-native-webview';
 import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useLanguage } from '../components/LanguageContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 // If using Expo instead of react-native-vector-icons, use this import:
 // import Icon from '@expo/vector-icons/Ionicons';
 
-const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslateY }) => {
+// PAUSED: header/tab-bar hide-on-scroll is disabled for now. It was driven
+// by scroll messages bridged from the WebView via postMessage, and no
+// amount of tuning (thresholds, debouncing, then a continuous 1:1-tracked
+// Animated.Value) got rid of the flicker — the bridge itself is the
+// bottleneck, since every update has to cross to the JS thread before an
+// animation can react to it. The real fix is dropping the WebView for
+// chapter content in favor of react-native-render-html in a native
+// ScrollView, which allows a genuinely native-driven, bridge-free
+// Animated.event — planned as a follow-up. Until then, the header just
+// stays put; no more flicker, at the cost of not hiding while reading.
+
+const ChapterContentScreen = ({ navigation, route }) => {
 
   const { chapterId = 1, language : paramLang } = route.params || {};
-  
+
   const { width } = useWindowDimensions();
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,13 +34,6 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
   const [maxChapterId, setMaxChapterId] = useState(0);
   const { fontSize, increaseFont, decreaseFont } = useFontSize();
   const webViewRef = useRef(null);
-  const [showUI, setShowUI] = useState(true);
-  const scrollOffset = useRef(0);
-  const lastScrollY = useRef(0);
-  const lastToggleTime = useRef(Date.now());
-  const SCROLL_DEBOUNCE_MS = 300;
-  const MIN_SCROLL_DELTA = 15;
-  const tabBarHeight = useBottomTabBarHeight();
   const { language, isLoading: isLanguageLoading } = useLanguage();
 
   // ✅ Memoize contentMap properly - prevents recreation on every render
@@ -50,33 +53,6 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
     document.head.appendChild(style);
     true;
   `, [fontSize]);
-
-  // Injected once on load. Sends scroll position for hide/show behavior, and
-  // a dedicated tap signal to bring the UI back.
-  //
-  // FIX: iOS WKWebView can be unreliable firing `click` on non-interactive
-  // elements like <body>/<div> unless the cursor style signals "clickable",
-  // and `click` alone can also be delayed/dropped compared to native touch
-  // events. We now also listen for `touchend` as a fallback, and set
-  // `cursor: pointer` on the body so Safari treats the whole page as tappable.
-  const injectedJS = useMemo(() => `
-    document.body.style.cursor = 'pointer';
-
-    window.addEventListener('scroll', () => {
-      window.ReactNativeWebView.postMessage(JSON.stringify({
-        type: 'scroll',
-        scrollY: window.scrollY
-      }));
-    }, { passive: true });
-
-    function sendTap() {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'tap' }));
-    }
-
-    document.addEventListener('click', sendTap);
-    document.addEventListener('touchend', sendTap);
-    true;
-  `, []);
 
   // ✅ Memoize functions to prevent recreating on every render
   const updateFontSizeInWebView = useCallback((fontSize) => {
@@ -106,62 +82,11 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
     navigation.navigate('ChapterContent', { chapterId, language });
   }, [navigation, language, saveLastReadChapter]);
 
-  const toggleUI = useCallback((visible) => {
-    console.log("toggling UI: " + visible);
-    if (toggleTabBar) {
-      toggleTabBar(visible);
-    }
-    setShowUI(visible);
-    navigation.setOptions({
-      headerShown: false
-    });
-  }, [toggleTabBar, navigation]);
-
-  // FIX: taps and scrolls are now handled as two clearly separate branches.
-  // Previously, a `tap` message (which has no `scrollY`) fell through the
-  // same delta/debounce checks used for `scroll` messages. That meant a tap
-  // arriving shortly after the last scroll event (the exact moment a user
-  // taps to bring the UI back after it just hid) could get silently
-  // swallowed by the debounce guard, leaving the header/tab bar stuck
-  // hidden. Taps now always show the UI immediately, with no debounce.
-  const handleWebViewMessage = useCallback((event) => {
-    const data = JSON.parse(event.nativeEvent.data);
-    const { type, scrollY } = data;
-    console.log("Message from WebView:", data);
-
-    const now = Date.now();
-
-    if (type === 'tap') {
-      toggleUI(true);
-      lastToggleTime.current = now;
-      return;
-    }
-
-    if (type === 'scroll') {
-      const delta = scrollY - lastScrollY.current;
-      lastScrollY.current = scrollY;
-      console.log("DELTA", delta.toString());
-
-      if (Math.abs(delta) < MIN_SCROLL_DELTA || now - lastToggleTime.current < SCROLL_DEBOUNCE_MS) {
-        return;
-      }
-
-      if (delta !== 0) {
-        toggleUI(false);
-        lastToggleTime.current = now;
-      }
-    }
-  }, [toggleUI]);
-
   const handleLoadEnd = useCallback(() => {
     if (webViewRef.current) {
       webViewRef.current.injectJavaScript(injectedJavaScript);
     }
   }, [injectedJavaScript]);
-
-  const handleTap = useCallback(() => {
-    if (!showUI) toggleUI(true);
-  }, [showUI, toggleUI]);
 
   // Safety net: if this tab is reached directly (e.g. a first-time user taps
   // the ChapterContent tab bar icon before ever selecting a language),
@@ -237,7 +162,6 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
       increaseFont={increaseFont}
       decreaseFont={decreaseFont}
       showFontControls={false}
-      showAppLayout={showUI}
     >
       <View style={{ flex: 1 }}>
         <View style={styles.container}>
@@ -253,32 +177,21 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
                 originWhitelist={['*']}
                 source={{ html: webViewHTML }}
                 style={{flex: 1, paddingBottom: 50}}
-                injectedJavaScript={injectedJS}
                 javaScriptEnabled={true}
                 onLoadEnd={handleLoadEnd}
-                scrollEventThrottle={16}
-                onMessage={handleWebViewMessage}
               />
             </View>
           )}
         </View>
       </View>
 
-      <Animated.View
-        style={[
-          styles.navContainer,
-          {
-            transform: [{
-              translateY: tabBarTranslateY.interpolate({
-                inputRange: [0, 100],
-                outputRange: [0, tabBarHeight],
-                extrapolate: 'clamp',
-              }),
-            }],
-            bottom: tabBarHeight + 20,
-          },
-        ]}
-      >
+      {/*
+        The tab bar is the standard, always-visible one (TabNavigator's
+        custom animated version is disabled — see the note there), which
+        lays out normally and already reserves its own space. So this just
+        needs a small fixed gutter above it, not the tab bar's height.
+      */}
+      <View style={[styles.navContainer, { bottom: 20 }]}>
         <TouchableOpacity
           onPress={() => goToChapter(currentChapterId - 1)}
           disabled={currentChapterId <= 1}
@@ -294,7 +207,7 @@ const ChapterContentScreen = ({ navigation, route, toggleTabBar, tabBarTranslate
           style={[styles.circleButton, currentChapterId >= maxChapterId && styles.disabledButton]}>
           <Icon name="chevron-forward" size={24} color="white" />
         </TouchableOpacity>
-      </Animated.View>
+      </View>
 
     </AppLayout>
   );
