@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import RNFS from 'react-native-fs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -77,26 +78,30 @@ export const ensureDatabaseExists = async (language) => {
     }
 
     const checkPermissions = async (filePath) => {
+      // FIX: testFile was declared inside the try block, so the finally
+      // block below (which also ran even on failure, before testFile
+      // existed) referenced an out-of-scope variable — a guaranteed
+      // ReferenceError on any call. Hoisted the declaration so cleanup can
+      // actually see it.
+      const directory = filePath.substring(0, filePath.lastIndexOf('/'));
+      const testFile = `${directory}/test_write.txt`;
       try {
-          const directory = filePath.substring(0, filePath.lastIndexOf('/'));
-          
           // Check if directory exists and is writable
           const dirExists = await RNFS.exists(directory);
           console.log('Directory exists:', dirExists);
-          
+
           if (dirExists) {
               const dirStats = await RNFS.stat(directory);
               console.log('Directory stats:', dirStats);
           }
-          
+
           // Try to create a test file
-          const testFile = `${directory}/test_write.txt`;
           await RNFS.writeFile(testFile, 'test', 'utf8');
           console.log('Write permission: OK');
-          
+
           // Clean up test file
           // await RNFS.unlink(testFile);
-          
+
           return true;
       } catch (error) {
           console.error('Permission check failed:', error);

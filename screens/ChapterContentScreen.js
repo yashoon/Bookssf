@@ -164,7 +164,17 @@ const ChapterContentScreen = ({ navigation, route }) => {
       showFontControls={false}
     >
       <View style={{ flex: 1 }}>
-        <View style={styles.container}>
+        {/* FIX: collapsable={false} keeps this container as a real native
+            view instead of Fabric potentially flattening/optimizing it
+            away. This container's child swaps between an ActivityIndicator
+            and a WebView (a heavy native view) as chapters load — that kind
+            of dynamic root-content swap is one of the most commonly
+            reported triggers for RetryableMountingLayerException ("Unable
+            to find viewState for tag N"), a still-open React Native New
+            Architecture bug. This doesn't eliminate the race, but it's a
+            no-behavior-change hardening several people reported reduced
+            crash frequency for the same pattern. */}
+        <View style={styles.container} collapsable={false}>
           {loading || !contentMap[chapterId]?.content ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="green" style={styles.spinner} />

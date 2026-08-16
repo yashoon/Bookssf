@@ -8,6 +8,7 @@ import SectionMenuScreen from '../screens/SectionMenuScreen';
 import LanguageSelectorScreen from '../screens/LanguageSelectorScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useLanguage } from '../components/LanguageContext';
+import { getInitialRouteName } from './routing';
 
 //adding animation
 import { BottomTabBar } from '@react-navigation/bottom-tabs';
@@ -108,9 +109,10 @@ if (!isReady || isLanguageLoading) return null; // or a small ActivityIndicator,
   // Only trust lastReadChapter as a "resume reading" signal if a language
   // has actually been selected. This guards against any stale AsyncStorage
   // data bypassing first-time language selection.
-  const initialRouteName = !hasLanguageSet
-    ? 'Language'
-    : (lastReadChapter ? 'ChapterContent' : 'Sections');
+  //
+  // The decision itself lives in ./routing.js as a pure function so it's
+  // unit-testable without mounting the whole navigator.
+  const initialRouteName = getInitialRouteName({ hasLanguageSet, lastReadChapter });
 
   return (
     // <FontSizeProvider>

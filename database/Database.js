@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import SQLite from 'react-native-sqlite-storage';
 import { ensureDatabaseExists } from './firebaseDBManager';
 import RNFS from 'react-native-fs';
@@ -17,27 +18,59 @@ export const getDBConnection = async () => {
 
 // getting database form firebase
 
-export const getDBConnection_local = async (language) => {
-  console.log('language name from database.js: ' + language);
-  
-  const dbPath = await ensureDatabaseExists(language);
-  console.log('Database path:', dbPath);
-  const dbName = `${language}.db`;
+// FIX: every screen (SectionMenuScreen, ChapterListScreen,
+// ChapterContentScreen, SearchScreen, LanguageSelectorScreen) was calling
+// getDBConnection_local(language) independently on its own mount, so a
+// single tab switch could kick off several concurrent, redundant
+// ensureDatabaseExists() calls (each doing its own AsyncStorage read +
+// network version check + SQLite.openDatabase) for the *same* language and
+// file at once. Besides the wasted work, that pile-up of near-simultaneous
+// async state settling — several screens re-rendering within the same
+// frame — is exactly the kind of pattern implicated in a recurring Fabric
+// crash we started seeing (RetryableMountingLayerException: "Unable to find
+// viewState for tag N"), a known upstream React Native New Architecture
+// issue where a queued native layout update loses its view mid-race. A
+// per-language in-flight/resolved connection cache means only the first
+// caller does the real work; everyone else awaits the same promise.
+const connectionCache = {};
 
-  return SQLite.openDatabase(
-    Platform.OS === 'ios'
-    ? {
-        name: dbName,
-        // location: 'Documents', // iOS needs this
-        location: 'Library', // iOS needs this
-      }
-    : {
-        name: dbPath, // Use the full path for Android
-        // location: 'default', // Android handles from DocumentDirectoryPath
-      },
-    () => console.log('✅ Opened database for', language),
-    error => console.error('❌ DB Open error:', error)
-  );
+export const getDBConnection_local = async (language) => {
+  if (connectionCache[language]) {
+    return connectionCache[language];
+  }
+
+  const connectionPromise = (async () => {
+    console.log('language name from database.js: ' + language);
+
+    const dbPath = await ensureDatabaseExists(language);
+    console.log('Database path:', dbPath);
+    const dbName = `${language}.db`;
+
+    return SQLite.openDatabase(
+      Platform.OS === 'ios'
+      ? {
+          name: dbName,
+          // location: 'Documents', // iOS needs this
+          location: 'Library', // iOS needs this
+        }
+      : {
+          name: dbPath, // Use the full path for Android
+          // location: 'default', // Android handles from DocumentDirectoryPath
+        },
+      () => console.log('✅ Opened database for', language),
+      error => console.error('❌ DB Open error:', error)
+    );
+  })();
+
+  connectionCache[language] = connectionPromise;
+
+  try {
+    return await connectionPromise;
+  } catch (error) {
+    // Don't poison the cache with a failed attempt — let the next caller retry.
+    delete connectionCache[language];
+    throw error;
+  }
 };
 
 

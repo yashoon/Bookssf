@@ -83,7 +83,11 @@ export default function AppLayout({
 
   return (
     <View style={{ flex: 1 }}>
+      {/* FIX: collapsable={false} — this view's height/opacity/translateY
+          are all dynamically animated (see the RetryableMountingLayerException
+          note in ChapterContentScreen.js for why that matters on Fabric). */}
       <Animated.View
+        collapsable={false}
         style={{
           transform: [{ translateY: headerTranslateY }],
           opacity: headerOpacity,
