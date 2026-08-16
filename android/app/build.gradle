@@ -80,8 +80,8 @@ android {
         applicationId "com.bookssf"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 15
-        versionName "1.5.8"
+        versionCode 16
+        versionName "1.5.9"
     }
     // FIX: this file previously had TWO separate `signingConfigs { }` blocks
     // and TWO separate `buildTypes { release { ... } }` blocks. Gradle
