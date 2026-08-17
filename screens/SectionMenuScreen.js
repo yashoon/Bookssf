@@ -91,45 +91,42 @@ const SectionMenuScreen = ({ navigation, route }) => {
     }
 
     try {
-      setLoadingStage('downloading');
-      setDownloadProgress(0);
-      
+      // FIX ("app startup is slow"): this used to unconditionally flip to
+      // 'downloading' and run a fixed ~2s fake progress animation
+      // (setInterval, +10% every 200ms) regardless of whether anything was
+      // actually being downloaded — so a returning user whose database was
+      // already cached locally still watched a fake "Downloading
+      // database..." bar for 2 full seconds on every single app open. Stay
+      // in 'checking' and only switch to 'downloading' if a real download
+      // actually starts (see getDBConnection_local's onProgress below) —
+      // for the common case (DB already local and current), this screen
+      // now goes straight from checking to processing.
       console.log("Final Language for Sections Screen: " + language);
-      
-      // Simulate download progress (you can replace this with actual download progress)
-      const simulateDownload = () => {
-        let progress = 0;
-        const interval = setInterval(() => {
-          progress += 10;
-          setDownloadProgress(progress);
-          
-          if (progress >= 100) {
-            clearInterval(interval);
-            setLoadingStage('processing');
-          }
-        }, 200); // Update every 200ms
-      };
-      
-      simulateDownload();
-      
+
       // Get database connection (this might involve downloading)
-      const db = await getDBConnection_local(language);
-      
+      const db = await getDBConnection_local(language, (percent) => {
+        setLoadingStage('downloading');
+        setDownloadProgress(percent);
+      });
+
       // Update stage to processing
       setLoadingStage('processing');
-      
+
       // Get sections
       const sectionlist = await getUsers(db, 'sections');
-      
+
       console.log("This is section List: ", sectionlist);
       setSections(sectionlist);
-      
+
       // Complete loading
       setLoadingStage('complete');
+      // FIX: was an unconditional 500ms pause on every load "to show
+      // completion" — trimmed to just enough to avoid an instant UI flash,
+      // not a fixed tax on startup time.
       setTimeout(() => {
         setLoading(false);
-      }, 500); // Brief pause to show completion
-      
+      }, 150);
+
     } catch (error) {
       console.error('Error fetching sections:', error);
       setLoadingStage('error');

@@ -128,9 +128,12 @@ export default function LanguageSelectorScreen({ navigation }) {
         [languageCode]: 'downloading'
       }));
 
+      // FIX ("first-time language download is taking time"): this used to
+      // add a flat, unconditional 2-second delay after the real download
+      // finished, for no functional reason — a pure tax on top of however
+      // long the actual network transfer already took.
       await getDBConnection_local(languageCode);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       setDownloadStatus(prev => ({
         ...prev,
         [languageCode]: 'downloaded'
@@ -154,21 +157,29 @@ export default function LanguageSelectorScreen({ navigation }) {
 
   // Check file existence for all languages on component mount
   useEffect(() => {
+    // FIX ("app startup is slow"): this is the very first screen a
+    // first-time user lands on (TabNavigator sends anyone with no language
+    // set here), and it used to check every supported language's file
+    // existence one at a time in a sequential for-loop — 12 separate,
+    // serialized native-bridge round trips before the screen could render
+    // anything useful. Each RNFS.exists() call is independent, so running
+    // them concurrently is both safe and strictly faster.
     const checkAllLanguages = async () => {
       setCheckingFiles(true);
-      const statusMap = {};
-      
-      for (const option of LANGUAGE_OPTIONS) {
-        try {
-          const exists = await checkFileExists(option.value);
-          statusMap[option.value] = exists ? 'downloaded' : 'not_downloaded';
-        } catch (error) {
-          console.error('Error checking', option.value, ':', error);
-          statusMap[option.value] = 'error';
-        }
-      }
-      
-      setDownloadStatus(statusMap);
+
+      const results = await Promise.all(
+        LANGUAGE_OPTIONS.map(async (option) => {
+          try {
+            const exists = await checkFileExists(option.value);
+            return [option.value, exists ? 'downloaded' : 'not_downloaded'];
+          } catch (error) {
+            console.error('Error checking', option.value, ':', error);
+            return [option.value, 'error'];
+          }
+        }),
+      );
+
+      setDownloadStatus(Object.fromEntries(results));
       setCheckingFiles(false);
     };
 

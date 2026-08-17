@@ -34,7 +34,16 @@ export const getDBConnection = async () => {
 // caller does the real work; everyone else awaits the same promise.
 const connectionCache = {};
 
-export const getDBConnection_local = async (language) => {
+/**
+ * @param {string} language
+ * @param {(percent: number) => void} [onProgress] Forwarded to
+ *   ensureDatabaseExists — only fires if a real download happens. Note: if
+ *   this language's connection is already cached or has an in-flight
+ *   request from another screen, onProgress here won't fire even if a
+ *   download is genuinely in progress elsewhere — it's only wired to
+ *   whichever call actually kicked off the work.
+ */
+export const getDBConnection_local = async (language, onProgress) => {
   if (connectionCache[language]) {
     return connectionCache[language];
   }
@@ -42,7 +51,7 @@ export const getDBConnection_local = async (language) => {
   const connectionPromise = (async () => {
     console.log('language name from database.js: ' + language);
 
-    const dbPath = await ensureDatabaseExists(language);
+    const dbPath = await ensureDatabaseExists(language, onProgress);
     console.log('Database path:', dbPath);
     const dbName = `${language}.db`;
 

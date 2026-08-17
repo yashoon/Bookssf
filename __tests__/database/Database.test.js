@@ -114,4 +114,14 @@ describe('getDBConnection_local (connection cache)', () => {
     await expect(getDBConnection_local('telugu')).resolves.toEqual({ mockConnection: true });
     expect(ensureDatabaseExists).toHaveBeenCalledTimes(2);
   });
+
+  it('forwards an onProgress callback through to ensureDatabaseExists', async () => {
+    ensureDatabaseExists.mockResolvedValue('/mock/path/nepali.db');
+    SQLite.openDatabase.mockResolvedValue({ mockConnection: true });
+    const onProgress = jest.fn();
+
+    await getDBConnection_local('nepali', onProgress);
+
+    expect(ensureDatabaseExists).toHaveBeenCalledWith('nepali', onProgress);
+  });
 });
