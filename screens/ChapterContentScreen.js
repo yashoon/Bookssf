@@ -8,6 +8,7 @@ import AppLayout from '../components/AppLayout';
 import { WebView } from 'react-native-webview';
 import { useFontSize } from '../components/FontSizeContext/FontSizeContext';
 import { useLanguage } from '../components/LanguageContext';
+import { maybeRequestReview } from '../utils/inAppReview';
 import Icon from 'react-native-vector-icons/Ionicons';
 // If using Expo instead of react-native-vector-icons, use this import:
 // import Icon from '@expo/vector-icons/Ionicons';
@@ -148,6 +149,10 @@ const ChapterContentScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (!language) return;
     saveLastReadChapter(chapterId);
+    // A chapter was actually read — the natural, non-intrusive moment to
+    // (eventually, once a few chapters in) prompt for a store review. See
+    // utils/inAppReview.js for the milestone/one-shot logic.
+    maybeRequestReview();
   }, [chapterId, language, saveLastReadChapter]);
 
   // ✅ Memoize WebView HTML content - prevents unnecessary WebView reloads

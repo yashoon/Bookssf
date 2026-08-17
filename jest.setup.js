@@ -64,6 +64,12 @@ jest.mock('react-native-webview', () => {
   const { View } = require('react-native');
   return { WebView: View };
 });
+jest.mock('react-native-rate-app', () => ({
+  requestReview: jest.fn(() => Promise.resolve(true)),
+  openStoreForReview: jest.fn(() => Promise.resolve(true)),
+  getAndroidMarketUrl: jest.fn(),
+  AndroidMarket: { GOOGLE: 'GOOGLE', SAMSUNG: 'SAMSUNG', HUAWEI: 'HUAWEI', AMAZON: 'AMAZON' },
+}));
 
 // The Firebase Web SDK (used here instead of @react-native-firebase) ships
 // ESM that Jest can't parse out of node_modules, and its real init talks to
