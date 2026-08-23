@@ -58,7 +58,15 @@ export default function ProfileScreen({navigation}) {
 
   return (
     <AppLayout>
-      <View style={styles.container}>
+      {/* FIX: collapsable={false} keeps this container as a real native
+          view instead of Fabric potentially flattening/optimizing it
+          away. This is the screen a second RetryableMountingLayerException
+          crash report landed on — its first mount happening right as the
+          previously-active tab goes inactive is itself the kind of
+          concurrent view-state change known to trigger "Unable to find
+          viewState for tag N", even without any internal loading/content
+          swap of its own. */}
+      <View style={styles.container} collapsable={false}>
         <Text style={styles.title}>Profile</Text>
 
         {/* Avatar + email header */}
