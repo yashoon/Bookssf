@@ -1,3 +1,4 @@
+import { Alert } from "react-native";
 import { getFriendlyFirebaseError } from "../utils/firebaseErrorMessages";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
