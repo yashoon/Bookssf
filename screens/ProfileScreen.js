@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { signOut, sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '../database/firebaseConfig';
+import React, {useEffect, useState} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet, Alert} from 'react-native';
+import {signOut, sendPasswordResetEmail} from 'firebase/auth';
+import {auth} from '../database/firebaseConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { use } from 'i18next';
+import {use} from 'i18next';
 import AppLayout from '../components/AppLayout';
 import Icon from 'react-native-vector-icons/Ionicons';
 // If using Expo instead of react-native-vector-icons, use this import:
 // import Icon from '@expo/vector-icons/Ionicons';
 
-export default function ProfileScreen({ navigation }) {
-
+export default function ProfileScreen({navigation}) {
   const user = auth.currentUser;
   // const user = AsyncStorage.getItem("authUser");
 
@@ -21,36 +20,36 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const handlePasswordReset = async () => {
-    if (!user?.email) return Alert.alert("Error", "No email found for this user.");
+    if (!user?.email)
+      return Alert.alert('Error', 'No email found for this user.');
     try {
       await sendPasswordResetEmail(auth, user.email);
-      Alert.alert('Password Reset', `A password reset email has been sent to ${user.email}.`);
+      Alert.alert(
+        'Password Reset',
+        `A password reset email has been sent to ${user.email}.`,
+      );
     } catch (error) {
       Alert.alert('Error', error.message);
     }
   };
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Log Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem("authUser");
-              await auth.signOut();
-              // navigation.replace("Login");
-            } catch (error) {
-              Alert.alert('Error', error.message);
-            }
-          },
+    Alert.alert('Log Out', 'Are you sure you want to log out?', [
+      {text: 'Cancel', style: 'cancel'},
+      {
+        text: 'Log Out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await AsyncStorage.removeItem('authUser');
+            await auth.signOut();
+            // navigation.replace("Login");
+          } catch (error) {
+            Alert.alert('Error', error.message);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   useEffect(() => {
@@ -85,7 +84,10 @@ export default function ProfileScreen({ navigation }) {
 
         {/* Actions card */}
         <View style={styles.card}>
-          <TouchableOpacity style={styles.actionRow} activeOpacity={0.7} onPress={handlePasswordReset}>
+          <TouchableOpacity
+            style={styles.actionRow}
+            activeOpacity={0.7}
+            onPress={handlePasswordReset}>
             <View style={styles.infoIconBadge}>
               <Icon name="key-outline" size={18} color="#4CAF50" />
             </View>
@@ -95,8 +97,16 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         {/* Logout button, set apart from the rest */}
-        <TouchableOpacity style={styles.logoutButton} activeOpacity={0.7} onPress={handleLogout}>
-          <Icon name="log-out-outline" size={18} color="#F44336" style={styles.logoutIcon} />
+        <TouchableOpacity
+          style={styles.logoutButton}
+          activeOpacity={0.7}
+          onPress={handleLogout}>
+          <Icon
+            name="log-out-outline"
+            size={18}
+            color="#F44336"
+            style={styles.logoutIcon}
+          />
           <Text style={styles.logoutButtonText}>Log Out</Text>
         </TouchableOpacity>
       </View>
@@ -150,7 +160,9 @@ const styles = StyleSheet.create({
     // shadow renders as a distorted rectangle instead of following the
     // rounded corners, showing up as a dark box around the card. boxShadow
     // (New Architecture, already enabled) is correct on both platforms.
-    boxShadow: [{ offsetX: 0, offsetY: 2, blurRadius: 4, color: 'rgba(0, 0, 0, 0.1)' }],
+    boxShadow: [
+      {offsetX: 0, offsetY: 2, blurRadius: 4, color: 'rgba(0, 0, 0, 0.1)'},
+    ],
     overflow: 'hidden',
   },
   infoRow: {

@@ -3307,6 +3307,28 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - RNSentry (8.23.0):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - RNVectorIcons (10.3.0):
     - DoubleConversion
     - glog
@@ -3421,6 +3443,7 @@ DEPENDENCIES:
   - "RNGoogleSignin (from `../node_modules/@react-native-google-signin/google-signin`)"
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
+  - "RNSentry (from `../node_modules/@sentry/react-native`)"
   - RNVectorIcons (from `../node_modules/react-native-vector-icons`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -3625,6 +3648,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
     :path: "../node_modules/react-native-screens"
+  RNSentry:
+    :path: "../node_modules/@sentry/react-native"
   RNVectorIcons:
     :path: "../node_modules/react-native-vector-icons"
   Yoga:
@@ -3743,10 +3768,11 @@ SPEC CHECKSUMS:
   RNGoogleSignin: dd7ff863f8c9760d3f0fb86bcfa86cf28e322e33
   RNReanimated: 4130e31fc2b570d0301c53064fece62cda2ad73e
   RNScreens: ef58b1f3077f7ee62b58f958536ee5ccb52d96b5
+  RNSentry: d5ee60f7a426e3de80ee61f558682e5cb120158b
   RNVectorIcons: 656546fa945a04b69d54169c5f0173855bbe6a1d
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 93a4c16be50e6f29a7ef8e2b19505d7857c651fb
 
-PODFILE CHECKSUM: bf256a10ca6a16ddb0cda8b33ee791c577c97682
+PODFILE CHECKSUM: 8b4dbef3f70afd3f9e5ddef02c757f8f22095a8a
 
 COCOAPODS: 1.15.2

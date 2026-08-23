@@ -16,6 +16,8 @@ else
   use_frameworks! :linkage => :static
 end
 
+use_modular_headers!
+
 target 'Bookssf' do
   config = use_native_modules!
 

@@ -20,7 +20,9 @@ jest.mock('react-native-toast-message', () => ({
 // react-navigation/stack (which uses gesture-handler under the hood) throws
 // on a missing native TurboModule.
 require('react-native-gesture-handler/jestSetup');
-jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+jest.mock('react-native-reanimated', () =>
+  require('react-native-reanimated/mock'),
+);
 
 // Native modules with no real behavior needed for rendering/import — stub
 // them to plain objects/no-ops so screens that import them don't crash at
@@ -34,20 +36,20 @@ jest.mock('react-native-fs', () => ({
   DocumentDirectoryPath: '/mock/documents',
   LibraryDirectoryPath: '/mock/library',
   exists: jest.fn(() => Promise.resolve(false)),
-  downloadFile: jest.fn(() => ({ promise: Promise.resolve({ statusCode: 200 }) })),
-  stat: jest.fn(() => Promise.resolve({ size: 0 })),
+  downloadFile: jest.fn(() => ({promise: Promise.resolve({statusCode: 200})})),
+  stat: jest.fn(() => Promise.resolve({size: 0})),
   writeFile: jest.fn(() => Promise.resolve()),
   unlink: jest.fn(() => Promise.resolve()),
 }));
 jest.mock('@react-native-community/netinfo', () => ({
-  fetch: jest.fn(() => Promise.resolve({ isConnected: true })),
+  fetch: jest.fn(() => Promise.resolve({isConnected: true})),
   addEventListener: jest.fn(),
 }));
 jest.mock('sp-react-native-in-app-updates', () => {
   return jest.fn().mockImplementation(() => ({
     addStatusUpdateListener: jest.fn(),
     removeStatusUpdateListener: jest.fn(),
-    checkNeedsUpdate: jest.fn(() => Promise.resolve({ shouldUpdate: false })),
+    checkNeedsUpdate: jest.fn(() => Promise.resolve({shouldUpdate: false})),
     startUpdate: jest.fn(),
     installUpdate: jest.fn(),
   }));
@@ -61,14 +63,29 @@ jest.mock('@react-native-google-signin/google-signin', () => ({
   },
 }));
 jest.mock('react-native-webview', () => {
-  const { View } = require('react-native');
-  return { WebView: View };
+  const {View} = require('react-native');
+  return {WebView: View};
 });
 jest.mock('react-native-rate-app', () => ({
   requestReview: jest.fn(() => Promise.resolve(true)),
   openStoreForReview: jest.fn(() => Promise.resolve(true)),
   getAndroidMarketUrl: jest.fn(),
-  AndroidMarket: { GOOGLE: 'GOOGLE', SAMSUNG: 'SAMSUNG', HUAWEI: 'HUAWEI', AMAZON: 'AMAZON' },
+  AndroidMarket: {
+    GOOGLE: 'GOOGLE',
+    SAMSUNG: 'SAMSUNG',
+    HUAWEI: 'HUAWEI',
+    AMAZON: 'AMAZON',
+  },
+}));
+jest.mock('@sentry/react-native', () => ({
+  init: jest.fn(),
+  wrap: component => component,
+  addBreadcrumb: jest.fn(),
+  captureException: jest.fn(),
+  setTag: jest.fn(),
+  reactNavigationIntegration: jest.fn(() => ({
+    registerNavigationContainer: jest.fn(),
+  })),
 }));
 
 // The Firebase Web SDK (used here instead of @react-native-firebase) ships
@@ -76,9 +93,9 @@ jest.mock('react-native-rate-app', () => ({
 // the network — neither of which we want for a render smoke test. Stub the
 // pieces App.js/firebaseConfig.js actually call.
 jest.mock('firebase/app', () => ({
-  initializeApp: jest.fn(() => ({ name: '[DEFAULT]' })),
+  initializeApp: jest.fn(() => ({name: '[DEFAULT]'})),
   getApps: jest.fn(() => []),
-  getApp: jest.fn(() => ({ name: '[DEFAULT]' })),
+  getApp: jest.fn(() => ({name: '[DEFAULT]'})),
 }));
 jest.mock('firebase/auth', () => ({
   initializeAuth: jest.fn(() => ({})),
