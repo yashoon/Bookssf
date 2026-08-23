@@ -242,10 +242,18 @@ export default function LanguageSelectorScreen({ navigation }) {
     }
   };
 
+  // FIX: collapsable={false} on this screen's root content views (below,
+  // and on the main-content return further down) keeps them as real
+  // native views instead of Fabric potentially flattening/optimizing them
+  // away. This is the screen a language selection is made on, right
+  // before the app navigates to the Sections tab and other tab screens
+  // re-render concurrently in response to the language change — exactly
+  // the sequence seen in the RetryableMountingLayerException crash report
+  // this was added in response to ("Unable to find viewState for tag N").
   if (isLanguageLoading || checkingFiles) {
     return (
       <AppLayout>
-        <View style={[styles.container, styles.loadingContainer]}>
+        <View style={[styles.container, styles.loadingContainer]} collapsable={false}>
           <ActivityIndicator size="large" color="green" />
           <Text style={styles.loadingText}>
             {isLanguageLoading ? 'Loading language settings...' : 'Checking download status...'}
@@ -334,7 +342,7 @@ export default function LanguageSelectorScreen({ navigation }) {
 
   return (
     <AppLayout>
-      <View style={styles.container}>
+      <View style={styles.container} collapsable={false}>
         <Text style={styles.title}>{title}</Text>
         
         {language && (

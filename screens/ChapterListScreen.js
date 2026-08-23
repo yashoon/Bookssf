@@ -132,7 +132,15 @@ const ChapterListScreen = ({ navigation, route }) => {
 
   return (
     <AppLayout>
-      <View style={styles.container}>
+      {/* FIX: collapsable={false} keeps this container as a real native
+          view instead of Fabric potentially flattening/optimizing it away.
+          Its content swaps between a loading spinner and a FlatList as
+          chapters load, often right as a language change is also
+          re-rendering this and other tab screens simultaneously (see the
+          RetryableMountingLayerException crash report this was added in
+          response to) — exactly the kind of rapid root-view swap known to
+          trigger "Unable to find viewState for tag N". */}
+      <View style={styles.container} collapsable={false}>
         <Text style={styles.title}>Chapters</Text>
 
         {language && (

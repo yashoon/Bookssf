@@ -177,10 +177,19 @@ const SectionMenuScreen = ({ navigation, route }) => {
   }, [language, hasLanguageSet, isLanguageLoading]);
 
   // Show loading screen while language context is loading
+  // FIX: collapsable={false} on each of this screen's root content views
+  // (below, and on the other two return branches) keeps them as real
+  // native views instead of Fabric potentially flattening/optimizing them
+  // away. This screen swaps between three entirely different JSX return
+  // blocks (language-loading / content-loading / sections list) as
+  // language state and data resolve — often in a burst alongside a tab
+  // switch (see the RetryableMountingLayerException crash report this was
+  // added in response to) — which is exactly the kind of rapid root-view
+  // swap known to trigger "Unable to find viewState for tag N".
   if (isLanguageLoading) {
     return (
       <AppLayout>
-        <View style={[styles.container, styles.loadingContainer]}>
+        <View style={[styles.container, styles.loadingContainer]} collapsable={false}>
           <ActivityIndicator size="large" color="green" />
           <Text style={styles.loadingText}>Initializing language settings...</Text>
         </View>
@@ -192,7 +201,7 @@ const SectionMenuScreen = ({ navigation, route }) => {
   if (loading || sections.length === 0) {
     return (
       <AppLayout>
-        <View style={[styles.container, styles.loadingContainer]}>
+        <View style={[styles.container, styles.loadingContainer]} collapsable={false}>
           <Text style={styles.title}>Book Sections</Text>
           {language && (
             <Text style={styles.subtitle}>Getting things ready in {getLanguageLabel(language)}</Text>
@@ -275,7 +284,7 @@ const SectionMenuScreen = ({ navigation, route }) => {
   // Show sections
   return (
     <AppLayout>
-      <View style={styles.container}>
+      <View style={styles.container} collapsable={false}>
         <Text style={styles.title}>Book Sections</Text>
         
         {language && (
