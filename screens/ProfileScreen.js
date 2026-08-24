@@ -1,5 +1,13 @@
 import React, {useEffect, useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Alert} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Modal,
+  ActivityIndicator,
+} from 'react-native';
 import {signOut, sendPasswordResetEmail} from 'firebase/auth';
 import {auth} from '../database/firebaseConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,6 +20,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 export default function ProfileScreen({navigation}) {
   const user = auth.currentUser;
   // const user = AsyncStorage.getItem("authUser");
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
 
   // Derive a display initial for the avatar from the email (e.g. "j" from "jason@x.com")
   const getInitial = () => {
@@ -19,17 +29,27 @@ export default function ProfileScreen({navigation}) {
     return '?';
   };
 
+  // Confirmation dialog is opened by the "Change Password" row below; this
+  // is the actual send, triggered only once the user confirms in that
+  // dialog — not directly from the row's onPress anymore.
   const handlePasswordReset = async () => {
-    if (!user?.email)
+    if (!user?.email) {
+      setShowPasswordResetModal(false);
       return Alert.alert('Error', 'No email found for this user.');
+    }
+    setSendingReset(true);
     try {
       await sendPasswordResetEmail(auth, user.email);
+      setShowPasswordResetModal(false);
       Alert.alert(
         'Password Reset',
         `A password reset email has been sent to ${user.email}.`,
       );
     } catch (error) {
+      setShowPasswordResetModal(false);
       Alert.alert('Error', error.message);
+    } finally {
+      setSendingReset(false);
     }
   };
 
@@ -95,7 +115,7 @@ export default function ProfileScreen({navigation}) {
           <TouchableOpacity
             style={styles.actionRow}
             activeOpacity={0.7}
-            onPress={handlePasswordReset}>
+            onPress={() => setShowPasswordResetModal(true)}>
             <View style={styles.infoIconBadge}>
               <Icon name="key-outline" size={18} color="#4CAF50" />
             </View>
@@ -117,6 +137,56 @@ export default function ProfileScreen({navigation}) {
           />
           <Text style={styles.logoutButtonText}>Log Out</Text>
         </TouchableOpacity>
+
+        {/* Change-password confirmation dialog — styled to match the
+            "Continue reading?" dialog on ChapterListScreen, rather than a
+            plain native Alert, since this is asking for a real decision
+            (sends an email) rather than just relaying info. */}
+        <Modal
+          visible={showPasswordResetModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => !sendingReset && setShowPasswordResetModal(false)}>
+          <View style={styles.modalBackground}>
+            <View style={styles.modalBox}>
+              <View style={styles.modalIconBadge}>
+                <Icon name="mail-unread-outline" size={22} color="#4CAF50" />
+              </View>
+              <Text style={styles.modalText}>
+                Send a password reset email to{'\n'}
+                <Text style={styles.modalEmailText}>{user?.email}</Text>?
+              </Text>
+              <Text style={styles.modalSubText}>
+                You'll receive a link to set a new password.
+              </Text>
+
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={[styles.modalPrimaryButton, sendingReset && styles.modalButtonDisabled]}
+                  activeOpacity={0.7}
+                  disabled={sendingReset}
+                  onPress={handlePasswordReset}>
+                  {sendingReset ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <>
+                      <Icon name="send-outline" size={16} color="white" style={styles.modalButtonIcon} />
+                      <Text style={styles.modalPrimaryButtonText}>Send Email</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalTertiaryButton, sendingReset && styles.modalButtonDisabled]}
+                  activeOpacity={0.7}
+                  disabled={sendingReset}
+                  onPress={() => setShowPasswordResetModal(false)}>
+                  <Text style={styles.modalTertiaryButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </AppLayout>
   );
@@ -228,6 +298,91 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     color: '#F44336',
     fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+    boxShadow: [
+      {offsetX: 0, offsetY: 4, blurRadius: 10, color: 'rgba(0, 0, 0, 0.15)'},
+    ],
+  },
+  modalIconBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#4CAF5020',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  modalEmailText: {
+    color: '#4CAF50',
+    fontWeight: '700',
+  },
+  modalSubText: {
+    fontSize: 13,
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 6,
+    marginBottom: 20,
+  },
+  buttonRow: {
+    flexDirection: 'column',
+    width: '100%',
+    gap: 10,
+  },
+  modalButtonIcon: {
+    marginRight: 6,
+  },
+  modalButtonDisabled: {
+    opacity: 0.6,
+  },
+  modalPrimaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    borderRadius: 20,
+    boxShadow: [
+      {offsetX: 0, offsetY: 2, blurRadius: 4, color: 'rgba(76, 175, 80, 0.3)'},
+    ],
+  },
+  modalPrimaryButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  modalTertiaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0f0f0',
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  modalTertiaryButtonText: {
+    color: '#666',
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
