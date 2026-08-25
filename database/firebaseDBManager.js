@@ -69,37 +69,54 @@ export const ensureDatabaseExists = async (language, onProgress) => {
     else {
       console.log('Internet connection is available. Proceeding to check for updates.');
       console.log(`Fetching version from: ${versionUrl}`);
-      // const response = await fetch(versionUrl);
-      // const response = await fetch(`${versionUrl}?t=${Date.now()}`);
 
-      const response = await axios.get(`${versionUrl}?t=${Date.now()}`, {
-        timeout: VERSION_CHECK_TIMEOUT_MS,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
-        cancelToken: source.token,
-      });
-      
-      
-      console.log(`Response status: ${response.status}`);
-      console.log(`Response status: ${response.data}`);
-      // console.log(`Response ok: ${response.ok}`);
-      // console.log(`Response : ${response.json()[language]}`);
+      // FIX: this version-check request used to be inside the function's
+      // outer try/catch with no catch of its own, so any failure here
+      // (not just NetInfo reporting "offline") propagated all the way out
+      // of ensureDatabaseExists and aborted the whole call — even when a
+      // perfectly good local copy already existed on disk (dbExists,
+      // checked above, was simply never consulted in that case). NetInfo's
+      // isConnected only reflects whether the OS thinks it's associated
+      // with a network, not whether that network can actually reach the
+      // internet — a weak/flaky wifi signal reports isConnected: true and
+      // then fails the actual request with a Network Error (confirmed via
+      // a Sentry log: NETWORK_CAPABILITIES_CHANGED showed signal_strength
+      // -88/-89 dBm right before the axios GET failed). Catching it here
+      // and leaving remoteVersion at its localVersion default means the
+      // "up to date" check below naturally falls back to the existing
+      // local file instead of throwing — matching the offline branch above
+      // and the behavior documented for this function.
+      try {
+        const response = await axios.get(`${versionUrl}?t=${Date.now()}`, {
+          timeout: VERSION_CHECK_TIMEOUT_MS,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
+          cancelToken: source.token,
+        });
 
-      if (response.status !== 200) {
-          const errorText = await response.statusText; // try to read error message
-          throw new Error(`Failed to fetch version file: ${response.status} - ${errorText}`);
+        console.log(`Response status: ${response.status}`);
+        console.log(`Response status: ${response.data}`);
+
+        if (response.status !== 200) {
+          throw new Error(`Failed to fetch version file: ${response.status} - ${response.statusText}`);
         }
-        
-  
+
         const remoteVersions = response.data; // axios already parses JSON
         remoteVersion = remoteVersions[language]?.toString();
-      console.log(`Response -------: ${remoteVersions[language]}`);
-      // remoteVersion = remoteVersions['english']?.to String(); // Assuming 'english' is the key for the default language
-      // remoteVersion = remoteVersions[language]?.toString();
-      console.log(`Remote version for ${language}:`, remoteVersion);
-
+        console.log(`Response -------: ${remoteVersions[language]}`);
+        console.log(`Remote version for ${language}:`, remoteVersion);
+      } catch (versionCheckErr) {
+        console.warn(
+          `⚠️ Version check failed (${versionCheckErr.message}), using local database if available.`,
+        );
+        // remoteVersion stays equal to localVersion (set above), so if
+        // dbExists is true the download-trigger check below evaluates to
+        // false and we fall straight into the "use local copy" branch. If
+        // dbExists is false, it correctly still tries to download (there's
+        // nothing to fall back to) and surfaces a real error from that.
+      }
     }
 
     const checkPermissions = async (filePath) => {
@@ -144,6 +161,25 @@ export const ensureDatabaseExists = async (language, onProgress) => {
   //   }
   // });
 
+
+    // FIX ("show a proper no-internet error"): previously, a genuinely
+    // offline device with no local copy of this language (e.g. picking a
+    // language you've never downloaded before, with no signal) fell
+    // through to the RNFS.downloadFile() call below anyway, which then
+    // failed several seconds later with a raw native DNS error ("Unable to
+    // resolve host...") — technically correct, but a confusing, unfriendly
+    // message for what is simply "you're offline." Failing fast here with
+    // a clear, purpose-built error lets the UI show something a user
+    // actually understands. `isOffline` is a boolean marker (rather than
+    // callers string-matching err.message) so screens can reliably detect
+    // this specific case regardless of wording.
+    if (!state.isConnected && !dbExists) {
+      const offlineError = new Error(
+        `No internet connection. Connect to the internet to download the ${language} language pack.`,
+      );
+      offlineError.isOffline = true;
+      throw offlineError;
+    }
 
     // if ((state.isConnected && !dbExists) || (state.isConnected && localVersion !== remoteVersion)) {
     if ((!dbExists) || (localVersion !== remoteVersion)) {

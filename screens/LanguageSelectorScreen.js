@@ -75,12 +75,25 @@ export default function LanguageSelectorScreen({ navigation }) {
           `The ${selectedLanguage} database is not downloaded. Do you want to download it now?`,
           [
             { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Download', 
+            {
+              text: 'Download',
+              // FIX ("show a proper no-internet error"): this had no
+              // try/catch at all — a failed download (e.g. genuinely no
+              // internet) became an unhandled promise rejection instead of
+              // anything the user would see.
               onPress: async () => {
-                await downloadDatabase(languageLowerCase);
-                await setLanguage(languageLowerCase);
-                navigation.navigate('Sections', { language: languageLowerCase });
+                try {
+                  await downloadDatabase(languageLowerCase);
+                  await setLanguage(languageLowerCase);
+                  navigation.navigate('Sections', { language: languageLowerCase });
+                } catch (downloadError) {
+                  Alert.alert(
+                    downloadError.isOffline ? 'No Internet' : 'Download Failed',
+                    downloadError.isOffline
+                      ? downloadError.message
+                      : 'Failed to download the database. Please try again.',
+                  );
+                }
               }
             }
           ]
@@ -322,7 +335,12 @@ export default function LanguageSelectorScreen({ navigation }) {
               try {
                 await downloadDatabase(item.value);
               } catch (error) {
-                Alert.alert('Download Failed', 'Failed to download database. Please try again.');
+                Alert.alert(
+                  error.isOffline ? 'No Internet' : 'Download Failed',
+                  error.isOffline
+                    ? error.message
+                    : 'Failed to download database. Please try again.',
+                );
               }
             }}
           >
@@ -434,8 +452,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     marginBottom: 16,
+    // LOGO THEME: same gold border used on the pre-auth screens' inputs.
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#D4AF37',
   },
   searchIcon: {
     marginRight: 8,

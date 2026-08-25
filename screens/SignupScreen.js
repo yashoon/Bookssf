@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { signUpUser } from '../database/authService';
 import CheckBox from '@react-native-community/checkbox';
+import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 // If using Expo instead of react-native-vector-icons, use this import:
 // import Icon from '@expo/vector-icons/Ionicons';
@@ -81,9 +82,18 @@ const SignupScreen = ({ navigation }) => {
   };
 
   return (
+    // FIX ("looks empty and lifeless"): same soft green wash used on
+    // Welcome/Login, for visual consistency across the pre-auth flow.
+    <LinearGradient
+      colors={['#A5D6A7', '#E8F5E9', '#FFFFFF']}
+      locations={[0, 0.35, 0.6]}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 1}}
+      style={styles.container}
+    >
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
+      style={styles.keyboardAvoider}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -95,6 +105,8 @@ const SignupScreen = ({ navigation }) => {
         </View>
 
         <Text style={styles.title}>Create Account</Text>
+        {/* LOGO THEME: same gold accent rule used on Login/Welcome. */}
+        <View style={styles.titleAccent} />
         <Text style={styles.subtitle}>Sign up to get started</Text>
 
         {/* Email field */}
@@ -215,13 +227,16 @@ const SignupScreen = ({ navigation }) => {
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgb(255, 255, 255)',
+  },
+  keyboardAvoider: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
@@ -242,7 +257,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#4CAF5015',
+    // LOGO THEME: matches Login/Welcome — near-opaque white fill + gold
+    // ring so the badge stays legible against the gradient.
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderWidth: 2,
+    borderColor: '#D4AF37',
+    boxShadow: [{ offsetX: 0, offsetY: 2, blurRadius: 6, color: 'rgba(0, 0, 0, 0.15)' }],
   },
   title: {
     fontSize: 22,
@@ -250,19 +270,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#333',
   },
+  titleAccent: {
+    width: 28,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#D4AF37',
+    marginTop: 8,
+  },
   subtitle: {
     fontSize: 14,
     color: '#888',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 8,
     marginBottom: 24,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
+    // LOGO THEME: matches Login's gold input borders.
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#D4AF37',
     borderRadius: 10,
     backgroundColor: '#f9f9f9',
     paddingHorizontal: 14,

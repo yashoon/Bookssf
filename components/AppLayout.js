@@ -230,6 +230,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 10,
     overflow: 'hidden',
+    // LOGO THEME: same gold ring used on the Welcome/Login/Signup badges,
+    // for consistency now that this header is the "logo" moment on every
+    // other screen (Sections, ChapterList, Profile, Language all share
+    // this component).
+    borderWidth: 1.5,
+    borderColor: '#D4AF37',
   },
   logoImage: {
     width: 54,

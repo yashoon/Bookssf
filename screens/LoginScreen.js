@@ -19,6 +19,7 @@ import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider,
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { auth } from '../database/firebaseConfig';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 // If using Expo instead of react-native-vector-icons, use this import:
 // import Icon from '@expo/vector-icons/Ionicons';
@@ -176,9 +177,21 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
+    // FANCIER PASS (trial on Login only, pending confirmation before
+    // applying to Welcome/Signup): richer 4-stop diagonal gradient, deeper
+    // green at the very top corner tapering through two mid-tones to white.
+    // Still fades to white well before the input fields so their contrast
+    // is unaffected; the deeper top tone only sits behind the logo/title.
+    <LinearGradient
+      colors={['#4CAF50', '#81C784', '#C8E6C9', '#FFFFFF']}
+      locations={[0, 0.25, 0.5, 0.75]}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 1}}
+      style={styles.container}
+    >
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
+      style={styles.keyboardAvoider}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -190,6 +203,11 @@ export default function LoginScreen({ navigation }) {
         </View>
 
         <Text style={styles.title}>Welcome Back</Text>
+        {/* LOGO THEME: a thin gold accent pulled from the app icon's own
+            gold artwork — the palette everywhere else in the app is pure
+            green, so this is the one deliberate second color, used only as
+            a small decorative touch, not a competing action color. */}
+        <View style={styles.titleAccent} />
         <Text style={styles.subtitle}>Sign in to continue</Text>
 
         {/* Google Sign-In Button */}
@@ -241,6 +259,15 @@ export default function LoginScreen({ navigation }) {
             <Icon name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#999" />
           </TouchableOpacity>
         </View>
+
+        {/* UX FIX: moved here from below the Sign In button, per the design
+            critique — a user realizes they're stuck on their password
+            before they attempt to submit, not after, so this should be
+            reachable without scrolling past the button first. */}
+        <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotPasswordLink}>
+          <Text style={styles.link}>Forgot Password?</Text>
+        </TouchableOpacity>
+
         {errors.password && (
           <View style={styles.errorRow}>
             <Icon name="alert-circle" size={13} color="#F44336" style={styles.errorIcon} />
@@ -268,10 +295,6 @@ export default function LoginScreen({ navigation }) {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleForgotPassword} style={styles.linkTouchable}>
-          <Text style={styles.link}>Forgot Password?</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity onPress={() => navigation.navigate('Signup')} style={styles.linkTouchable}>
           <Text style={styles.linkMuted}>
             Don't have an account? <Text style={styles.linkAccent}>Sign up</Text>
@@ -279,13 +302,16 @@ export default function LoginScreen({ navigation }) {
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgb(255, 255, 255)',
+  },
+  keyboardAvoider: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
@@ -306,7 +332,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#4CAF5015',
+    // LOGO THEME: was a translucent green tint (#4CAF5015), designed for a
+    // plain white backdrop. Against the gradient, that tint became nearly
+    // invisible and the badge lost its edge. A near-opaque white fill plus
+    // a gold ring (pulled from the icon's own gold artwork) keeps the badge
+    // legible at any point on the gradient and reads as a deliberate
+    // "medallion" frame rather than an accident.
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderWidth: 2,
+    borderColor: '#D4AF37',
+    boxShadow: [{ offsetX: 0, offsetY: 2, blurRadius: 6, color: 'rgba(0, 0, 0, 0.15)' }],
   },
   title: {
     fontSize: 22,
@@ -314,19 +349,29 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#333',
   },
+  titleAccent: {
+    width: 28,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#D4AF37',
+    marginTop: 8,
+  },
   subtitle: {
     fontSize: 14,
     color: '#888',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 8,
     marginBottom: 24,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
+    // LOGO THEME: gold instead of plain gray, matching the badge ring.
+    // inputContainerError still overrides this to red when a field has an
+    // error, since that array entry is applied after this one.
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#D4AF37',
     borderRadius: 10,
     backgroundColor: '#f9f9f9',
     paddingHorizontal: 14,
@@ -352,6 +397,9 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 20,
     alignItems: 'center',
+    // LOGO THEME: tried a gold ring here too, but green fill + gold border
+    // read muddy together (unlike the badge/inputs, which sit on white).
+    // Left plain green — gold stays on the badge, title rule, and inputs.
     // FIX: elevation + borderRadius is a known RN 0.77 Android bug — the
     // shadow renders distorted/rectangular instead of following the rounded
     // corners, showing up as a dark box around the button. boxShadow (New
@@ -377,11 +425,13 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#eee',
+    // LOGO THEME
+    backgroundColor: '#D4AF37',
   },
   dividerText: {
     marginHorizontal: 15,
-    color: '#999',
+    // LOGO THEME
+    color: '#D4AF37',
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.5,
@@ -389,10 +439,15 @@ const styles = StyleSheet.create({
   linkTouchable: {
     marginTop: 16,
   },
+  // UX FIX: right-aligned directly under the password field, instead of
+  // centered below the Sign In button.
+  forgotPasswordLink: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+  },
   link: {
     color: '#4CAF50',
-    textAlign: 'center',
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
   },
   linkMuted: {

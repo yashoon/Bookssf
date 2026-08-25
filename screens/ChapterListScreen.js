@@ -37,6 +37,12 @@ const ChapterListScreen = ({ navigation, route }) => {
   const [showModal, setShowModal] = useState(false);
   const { language, isLoading: isLanguageLoading, hasLanguageSet } = useLanguage();
   const [loading, setLoading] = useState(true);
+  // FIX ("show a proper no-internet error"): the two effects below had no
+  // .catch() at all — a failed getDBConnection_local (e.g. genuinely no
+  // internet and no local copy of this language) became an unhandled
+  // promise rejection, `loading` never flipped back to false, and the
+  // screen sat on the spinner forever with no way out.
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Actual rendered height of the bottom tab bar (includes safe-area adjustments).
   // NOTE: this only works if ChapterListScreen is rendered inside a Tab.Navigator
@@ -51,6 +57,7 @@ const ChapterListScreen = ({ navigation, route }) => {
     if (!language || isLanguageLoading) return;
 
     setLoading(true);
+    setErrorMessage('');
 
     // fetching from local database from firebase
     console.log("language from chapter list screen: " + language);
@@ -62,6 +69,14 @@ const ChapterListScreen = ({ navigation, route }) => {
         setLoading(false);
         // console.log("This is chapter List::::::: " + users)
       });
+    }).catch((err) => {
+      console.error('Error loading chapters:', err);
+      setErrorMessage(
+        err.isOffline
+          ? err.message
+          : 'Something went wrong while loading chapters. Please try again.',
+      );
+      setLoading(false);
     });
 
     // fetching from local database from firebase
@@ -88,6 +103,7 @@ const ChapterListScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (!language || isLanguageLoading) return;
     setLoading(true);
+    setErrorMessage('');
     // fetching from local database from firebase
     console.log("language from chapter list screen: " + language);
     getDBConnection_local(language).then((db) => {
@@ -95,6 +111,14 @@ const ChapterListScreen = ({ navigation, route }) => {
         setChapters(users);
         setLoading(false);
       });
+    }).catch((err) => {
+      console.error('Error loading chapters:', err);
+      setErrorMessage(
+        err.isOffline
+          ? err.message
+          : 'Something went wrong while loading chapters. Please try again.',
+      );
+      setLoading(false);
     });
 
   }, [language, isLanguageLoading]);
@@ -152,7 +176,39 @@ const ChapterListScreen = ({ navigation, route }) => {
           </View>
         )}
 
-        {isEmptyOrLoading ? (
+        {errorMessage && !loading ? (
+          <View style={styles.loadingContainer}>
+            <Icon name="alert-circle" size={28} color="#F44336" style={{ marginBottom: 10 }} />
+            <Text style={[styles.loadingText, { color: '#F44336', fontWeight: '600' }]}>
+              {errorMessage}
+            </Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              activeOpacity={0.7}
+              onPress={() => {
+                setLoading(true);
+                setErrorMessage('');
+                getDBConnection_local(language).then((db) => {
+                  getUsers(db, 'chapters').then((users) => {
+                    setChapters(users);
+                    setLoading(false);
+                  });
+                }).catch((err) => {
+                  console.error('Error loading chapters:', err);
+                  setErrorMessage(
+                    err.isOffline
+                      ? err.message
+                      : 'Something went wrong while loading chapters. Please try again.',
+                  );
+                  setLoading(false);
+                });
+              }}
+            >
+              <Icon name="refresh-outline" size={16} color="white" style={styles.retryButtonIcon} />
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : isEmptyOrLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="green" style={styles.spinner} />
             <Text style={styles.loadingText}>
@@ -268,6 +324,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
+    // LOGO THEME: same gold accent used on the pre-auth screens' badges.
+    borderWidth: 1,
+    borderColor: '#D4AF37',
   },
   languageBadgeIcon: {
     marginRight: 6,
@@ -290,6 +349,26 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '500',
     textAlign: 'center',
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    marginTop: 16,
+    boxShadow: [{ offsetX: 0, offsetY: 2, blurRadius: 4, color: 'rgba(76, 175, 80, 0.3)' }],
+  },
+  retryButtonIcon: {
+    marginRight: 6,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   liststyle: {
     flex: 1,

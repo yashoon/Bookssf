@@ -218,6 +218,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
+    // LOGO THEME: same gold ring used on the pre-auth screens' badges.
+    borderWidth: 2,
+    borderColor: '#D4AF37',
   },
   avatarText: {
     fontSize: 28,
