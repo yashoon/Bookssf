@@ -75,12 +75,25 @@ export default function LanguageSelectorScreen({ navigation }) {
           `The ${selectedLanguage} database is not downloaded. Do you want to download it now?`,
           [
             { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Download', 
+            {
+              text: 'Download',
+              // FIX ("show a proper no-internet error"): this had no
+              // try/catch at all — a failed download (e.g. genuinely no
+              // internet) became an unhandled promise rejection instead of
+              // anything the user would see.
               onPress: async () => {
-                await downloadDatabase(languageLowerCase);
-                await setLanguage(languageLowerCase);
-                navigation.navigate('Sections', { language: languageLowerCase });
+                try {
+                  await downloadDatabase(languageLowerCase);
+                  await setLanguage(languageLowerCase);
+                  navigation.navigate('Sections', { language: languageLowerCase });
+                } catch (downloadError) {
+                  Alert.alert(
+                    downloadError.isOffline ? 'No Internet' : 'Download Failed',
+                    downloadError.isOffline
+                      ? downloadError.message
+                      : 'Failed to download the database. Please try again.',
+                  );
+                }
               }
             }
           ]
@@ -242,10 +255,18 @@ export default function LanguageSelectorScreen({ navigation }) {
     }
   };
 
+  // FIX: collapsable={false} on this screen's root content views (below,
+  // and on the main-content return further down) keeps them as real
+  // native views instead of Fabric potentially flattening/optimizing them
+  // away. This is the screen a language selection is made on, right
+  // before the app navigates to the Sections tab and other tab screens
+  // re-render concurrently in response to the language change — exactly
+  // the sequence seen in the RetryableMountingLayerException crash report
+  // this was added in response to ("Unable to find viewState for tag N").
   if (isLanguageLoading || checkingFiles) {
     return (
       <AppLayout>
-        <View style={[styles.container, styles.loadingContainer]}>
+        <View style={[styles.container, styles.loadingContainer]} collapsable={false}>
           <ActivityIndicator size="large" color="green" />
           <Text style={styles.loadingText}>
             {isLanguageLoading ? 'Loading language settings...' : 'Checking download status...'}
@@ -314,7 +335,12 @@ export default function LanguageSelectorScreen({ navigation }) {
               try {
                 await downloadDatabase(item.value);
               } catch (error) {
-                Alert.alert('Download Failed', 'Failed to download database. Please try again.');
+                Alert.alert(
+                  error.isOffline ? 'No Internet' : 'Download Failed',
+                  error.isOffline
+                    ? error.message
+                    : 'Failed to download database. Please try again.',
+                );
               }
             }}
           >
@@ -334,7 +360,7 @@ export default function LanguageSelectorScreen({ navigation }) {
 
   return (
     <AppLayout>
-      <View style={styles.container}>
+      <View style={styles.container} collapsable={false}>
         <Text style={styles.title}>{title}</Text>
         
         {language && (
@@ -426,8 +452,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     marginBottom: 16,
+    // LOGO THEME: same gold border used on the pre-auth screens' inputs.
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#D4AF37',
   },
   searchIcon: {
     marginRight: 8,

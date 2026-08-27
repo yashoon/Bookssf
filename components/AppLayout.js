@@ -3,6 +3,8 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, StyleSheet, Animated, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
+import { useLanguage } from './LanguageContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 // If using Expo instead of react-native-vector-icons, use this import:
 // import Icon from '@expo/vector-icons/Ionicons';
@@ -40,6 +42,28 @@ export default function AppLayout({
 }) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { hasLanguageSet } = useLanguage();
+
+  // FIX (RetryableMountingLayerException): same guard as TabNavigator's
+  // tab-press listeners — Search sits in the outer Stack.Navigator (opened
+  // via this icon, not a tab), so it needed its own copy of the same
+  // "don't let the user reach a screen that needs a language before one is
+  // set" gate. SearchScreen didn't previously redirect on its own if
+  // reached with no language — it would just render with a permanently
+  // empty result set — so blocking it here rather than only relying on an
+  // in-screen safety net.
+  const handleSearchPress = () => {
+    if (!hasLanguageSet) {
+      Toast.show({
+        type: 'info',
+        text1: 'Please select a language first',
+        position: 'bottom',
+      });
+      navigation.navigate("Shepherd's Staff", { screen: 'Language' });
+      return;
+    }
+    navigation.navigate('Search');
+  };
 
   // Auto-detect: if this screen was reached via a stack push (like Search,
   // opened from the header's search icon) rather than being a tab itself,
@@ -153,7 +177,7 @@ export default function AppLayout({
             {showSearchIcon && (
               <TouchableOpacity
                 style={styles.iconButton}
-                onPress={() => navigation.navigate('Search')}
+                onPress={handleSearchPress}
                 hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               >
                 <Icon name="search-outline" size={22} color="white" />
@@ -206,6 +230,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 10,
     overflow: 'hidden',
+    // LOGO THEME: same gold ring used on the Welcome/Login/Signup badges,
+    // for consistency now that this header is the "logo" moment on every
+    // other screen (Sections, ChapterList, Profile, Language all share
+    // this component).
+    borderWidth: 1.5,
+    borderColor: '#D4AF37',
   },
   logoImage: {
     width: 54,

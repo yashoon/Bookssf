@@ -30,6 +30,12 @@ const SectionMenuScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [loadingStage, setLoadingStage] = useState('checking'); // 'checking', 'downloading', 'processing', 'complete'
   const [downloadProgress, setDownloadProgress] = useState(0);
+  // FIX ("show a proper no-internet error"): previously the error branch
+  // below only ever showed a generic "Something went wrong" regardless of
+  // cause, so a genuinely offline device with no local copy of this
+  // language looked identical to any other failure. Captures the actual
+  // (friendly) error message so the UI can be specific.
+  const [errorMessage, setErrorMessage] = useState('');
   const isInitialRender = useRef(true);
 
   // Loading stage messages
@@ -129,9 +135,13 @@ const SectionMenuScreen = ({ navigation, route }) => {
 
     } catch (error) {
       console.error('Error fetching sections:', error);
+      setErrorMessage(
+        error.isOffline
+          ? error.message
+          : 'Something went wrong while loading this language. Please try again.',
+      );
       setLoadingStage('error');
       setLoading(false);
-      // You could show an error message here
     }
   };
 
@@ -171,16 +181,26 @@ const SectionMenuScreen = ({ navigation, route }) => {
       console.log("Fetching sections for language: " + language);
       setLoading(true);
       setLoadingStage('checking');
+      setErrorMessage('');
       setSections([]);
       fetchLanguage_new();
     }
   }, [language, hasLanguageSet, isLanguageLoading]);
 
   // Show loading screen while language context is loading
+  // FIX: collapsable={false} on each of this screen's root content views
+  // (below, and on the other two return branches) keeps them as real
+  // native views instead of Fabric potentially flattening/optimizing them
+  // away. This screen swaps between three entirely different JSX return
+  // blocks (language-loading / content-loading / sections list) as
+  // language state and data resolve — often in a burst alongside a tab
+  // switch (see the RetryableMountingLayerException crash report this was
+  // added in response to) — which is exactly the kind of rapid root-view
+  // swap known to trigger "Unable to find viewState for tag N".
   if (isLanguageLoading) {
     return (
       <AppLayout>
-        <View style={[styles.container, styles.loadingContainer]}>
+        <View style={[styles.container, styles.loadingContainer]} collapsable={false}>
           <ActivityIndicator size="large" color="green" />
           <Text style={styles.loadingText}>Initializing language settings...</Text>
         </View>
@@ -192,7 +212,7 @@ const SectionMenuScreen = ({ navigation, route }) => {
   if (loading || sections.length === 0) {
     return (
       <AppLayout>
-        <View style={[styles.container, styles.loadingContainer]}>
+        <View style={[styles.container, styles.loadingContainer]} collapsable={false}>
           <Text style={styles.title}>Book Sections</Text>
           {language && (
             <Text style={styles.subtitle}>Getting things ready in {getLanguageLabel(language)}</Text>
@@ -259,11 +279,33 @@ const SectionMenuScreen = ({ navigation, route }) => {
             )}
 
             {loadingStage === 'error' && (
-              <View style={styles.completeRow}>
-                <Icon name="alert-circle" size={16} color="#F44336" style={styles.completeIcon} />
-                <Text style={[styles.subText, { color: '#F44336', fontStyle: 'normal', fontWeight: '600' }]}>
-                  Something went wrong. Please try again.
-                </Text>
+              // FIX ("show a proper no-internet error"): this branch used to
+              // be icon+text only, with no way to retry short of leaving
+              // and re-entering the screen (the only Retry button in this
+              // file lives in the "No sections available yet" empty state
+              // below, which is actually unreachable — `sections.length ===
+              // 0` is caught by this same loading branch first, so that
+              // return is never hit).
+              <View style={styles.errorStateContainer}>
+                <View style={styles.completeRow}>
+                  <Icon name="alert-circle" size={16} color="#F44336" style={styles.completeIcon} />
+                  <Text style={[styles.subText, { color: '#F44336', fontStyle: 'normal', fontWeight: '600' }]}>
+                    {errorMessage || 'Something went wrong. Please try again.'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.retryButton, { marginTop: 12 }]}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setLoading(true);
+                    setLoadingStage('checking');
+                    setErrorMessage('');
+                    fetchLanguage_new();
+                  }}
+                >
+                  <Icon name="refresh-outline" size={16} color="white" style={styles.retryButtonIcon} />
+                  <Text style={styles.retryText}>Retry</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -275,7 +317,7 @@ const SectionMenuScreen = ({ navigation, route }) => {
   // Show sections
   return (
     <AppLayout>
-      <View style={styles.container}>
+      <View style={styles.container} collapsable={false}>
         <Text style={styles.title}>Book Sections</Text>
         
         {language && (
@@ -297,6 +339,7 @@ const SectionMenuScreen = ({ navigation, route }) => {
               onPress={() => {
                 setLoading(true);
                 setLoadingStage('checking');
+                setErrorMessage('');
                 fetchLanguage_new();
               }}
             >
@@ -417,6 +460,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
+  errorStateContainer: {
+    alignItems: 'center',
+  },
   completeIcon: {
     marginRight: 6,
   },
@@ -431,6 +477,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
+    // LOGO THEME: same gold accent used on the pre-auth screens' badges.
+    borderWidth: 1,
+    borderColor: '#D4AF37',
   },
   languageBadgeIcon: {
     marginRight: 6,

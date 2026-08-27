@@ -83,3 +83,9 @@ firebase-debug.log
 *.db
 public/
 .env
+
+# Sentry — contains a live org auth.token (source map/debug symbol upload
+# credential), not something that should ever be committed. CI supplies its
+# own via SENTRY_AUTH_TOKEN in the relevant workflow's env instead.
+android/sentry.properties
+ios/sentry.properties

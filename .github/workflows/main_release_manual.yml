@@ -42,11 +42,21 @@ jobs:
       FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
       FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
       FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      # Picked up directly by the Sentry Gradle plugin (applied in
+      # android/app/build.gradle) for its release-build source map upload
+      # step — replaces the previously-committed android/sentry.properties,
+      # which contained this same token in plaintext and has been removed
+      # from git. Add SENTRY_AUTH_TOKEN as a repo secret (Settings ->
+      # Secrets and variables -> Actions) with a freshly-rotated token.
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: gilead-technologies
+      SENTRY_PROJECT: react-native
 
     steps:
       - name: 🧱 Checkout Code
         uses: actions/checkout@v4
-      
+
       - name: Create .env file
         run: |
           echo "FIREBASE_API_KEY=$FIREBASE_API_KEY" >> .env
@@ -55,6 +65,7 @@ jobs:
           echo "FIREBASE_STORAGE_BUCKET=$FIREBASE_STORAGE_BUCKET" >> .env
           echo "FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID" >> .env
           echo "FIREBASE_APP_ID=$FIREBASE_APP_ID" >> .env
+          echo "SENTRY_DSN=$SENTRY_DSN" >> .env
 
       - name: ⚙️ Set up Node.js
         uses: actions/setup-node@v4
@@ -113,7 +124,7 @@ jobs:
       #   with:
       #     name: release-apk
       #     path: android/app/build/outputs/apk/release/app-release.apk
-      
+
       - name: 💾 Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -128,14 +139,14 @@ jobs:
         with:
           name: release-aab
           path: ./release
-      
+
       - name: 🚀 Upload to Google Play (Closed Testing)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GPLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.bookssf
           releaseFiles: ./release/app-release.aab
-          track: alpha   # 👈 Uploads to Closed Testing track
+          track: alpha # 👈 Uploads to Closed Testing track
           # userFraction: 0.5  # 👈 50% rollout
           status: completed
 

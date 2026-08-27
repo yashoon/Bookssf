@@ -200,7 +200,13 @@ const SearchScreen = () => {
 
   return (
     <AppLayout title="Search" showSearchIcon={false} showBackButton={true}>
-      <View style={styles.container}>
+      {/* FIX: collapsable={false} keeps this container as a real native
+          view instead of Fabric potentially flattening/optimizing it away.
+          Its content swaps between a loading spinner and a FlatList as
+          chapters load, the same root-content-swap pattern applied to the
+          tab screens in response to the RetryableMountingLayerException
+          crash reports ("Unable to find viewState for tag N"). */}
+      <View style={styles.container} collapsable={false}>
         <View style={styles.searchContainer}>
           <Icon name="search-outline" size={18} color="#999" style={styles.searchIcon} />
           <TextInput

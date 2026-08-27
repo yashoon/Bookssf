@@ -70,6 +70,7 @@ react {
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
+apply from: new File(["node", "--print", "require.resolve('@sentry/react-native/package.json')"].execute().text.trim(), "../sentry.gradle")
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -80,8 +81,8 @@ android {
         applicationId "com.bookssf"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 17
-        versionName "1.6.0"
+        versionCode 23
+        versionName "1.6.6"
     }
     // FIX: this file previously had TWO separate `signingConfigs { }` blocks
     // and TWO separate `buildTypes { release { ... } }` blocks. Gradle

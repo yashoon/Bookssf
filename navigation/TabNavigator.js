@@ -9,6 +9,7 @@ import LanguageSelectorScreen from '../screens/LanguageSelectorScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useLanguage } from '../components/LanguageContext';
 import { getInitialRouteName } from './routing';
+import Toast from 'react-native-toast-message';
 
 //adding animation
 import { BottomTabBar } from '@react-navigation/bottom-tabs';
@@ -114,6 +115,33 @@ if (!isReady || isLanguageLoading) return null; // or a small ActivityIndicator,
   // unit-testable without mounting the whole navigator.
   const initialRouteName = getInitialRouteName({ hasLanguageSet, lastReadChapter });
 
+  // FIX (RetryableMountingLayerException): blocks navigating into any tab
+  // other than Language while no language is set yet, instead of letting
+  // the tap go through and having that screen's own "no language set,
+  // redirecting to Language tab" useEffect fire after it's already
+  // mounted. Previously, tapping around between tabs before selecting a
+  // language could mount several of these screens in quick succession,
+  // each independently calling navigation.navigate('Language') — multiple
+  // concurrent redirects landing right as React Navigation/Fabric was also
+  // mid tab-switch, which is exactly the kind of rapid, concurrent native
+  // view churn that triggers "Unable to find viewState for tag N" crash
+  // reports. Blocking the tap here means those screens never mount in that
+  // state, so there's nothing left to race. The per-screen redirect
+  // effects are left in place as a backstop, not removed.
+  const guardTabPress = (navigation) => (e) => {
+    if (!hasLanguageSet) {
+      e.preventDefault();
+      Toast.show({
+        type: 'info',
+        text1: 'Please select a language first',
+        position: 'bottom',
+      });
+      // Guide the user to the one tab that is reachable, rather than
+      // leaving them on a dead tap with only the toast as feedback.
+      navigation.navigate('Language');
+    }
+  };
+
   return (
     // <FontSizeProvider>
 <Tab.Navigator
@@ -143,13 +171,19 @@ if (!isReady || isLanguageLoading) return null; // or a small ActivityIndicator,
       // <Icon name="menu-outline" size={24} color="#000" />
     ),
     }}
+      listeners={({ navigation }) => ({ tabPress: guardTabPress(navigation) })}
   />
-  <Tab.Screen name="ChapterList" component={ChapterListScreen} />
+  <Tab.Screen
+    name="ChapterList"
+    component={ChapterListScreen}
+    listeners={({ navigation }) => ({ tabPress: guardTabPress(navigation) })}
+  />
 
   <Tab.Screen
         name="ChapterContent"
         initialParams={{ chapterId: lastReadChapter ?? 1 }}
         // options={{ tabBarButton: () => null }} // optional: hide tab icon if needed
+        listeners={({ navigation }) => ({ tabPress: guardTabPress(navigation) })}
       >
     {(props) => (
     <ChapterContentScreen
@@ -157,7 +191,7 @@ if (!isReady || isLanguageLoading) return null; // or a small ActivityIndicator,
     />
   )}
   </Tab.Screen>
-  <Tab.Screen name="Language" component={LanguageSelectorScreen} 
+  <Tab.Screen name="Language" component={LanguageSelectorScreen}
       options={{
         tabBarIcon: ({ color, size }) => (
           <Icon name="language-outline" color={color} size={size} />
@@ -170,6 +204,7 @@ if (!isReady || isLanguageLoading) return null; // or a small ActivityIndicator,
         options={{
           tabBarIcon: ({ color, size }) => <Icon name="person-outline" color={color} size={size} />,
         }}
+        listeners={({ navigation }) => ({ tabPress: guardTabPress(navigation) })}
       />
 
 

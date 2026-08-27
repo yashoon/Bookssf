@@ -5,36 +5,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 Install dependencies:
+
 ```sh
 npm install
 cd ios && bundle install && bundle exec pod install   # first run / after native dep changes
 ```
 
 Run the app (Metro must be running separately via `npm start`):
+
 ```sh
 npm run android
 npm run ios
 ```
 
 Lint:
+
 ```sh
 npm run lint          # eslint .
 ```
 
 Tests:
+
 ```sh
 npm test                                  # full Jest suite
 npx jest __tests__/navigation/routing.test.js   # single file
 npx jest -t "resumes the last-read chapter"     # single test by name
 ```
 
-Requires a `.env` file at the repo root (gitignored) with `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_APP_ID` — consumed via `react-native-dotenv`'s `@env` module in `database/firebaseConfig.js`.
+Requires a `.env` file at the repo root (gitignored) with `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_APP_ID` — consumed via `react-native-dotenv`'s `@env` module in `database/firebaseConfig.js`. Also reads `SENTRY_DSN` the same way in `App.js`; if unset, `Sentry.init()` safely no-ops (SDK stays disabled) rather than erroring.
 
 ## Architecture
 
 **Entry point**: `index.js` registers `App.js` as the root component (`AppRegistry`).
 
 **App.js** is the real composition root. It owns:
+
 - Firebase auth state, via `firebase/auth`'s `onAuthStateChanged` against the `auth` instance exported by `database/firebaseConfig.js` (the Firebase **Web** JS SDK with `getReactNativePersistence(AsyncStorage)` — not `@react-native-firebase`, even though that package is also a dependency).
 - The Android in-app update check (`sp-react-native-in-app-updates`), gated on `Platform.OS === 'android'`.
 - The top-level `Stack.Navigator`: `Login`/`Signup` when logged out, `Welcome`/`Shepherd's Staff` (→ `TabNavigator`)/`Search` when logged in.
@@ -54,13 +59,20 @@ Requires a `.env` file at the repo root (gitignored) with `FIREBASE_API_KEY`, `F
 
 **Auth screens**: `LoginScreen.js`, `SignupScreen.js`, `components/GoogleSignInButton.js`. Auth state itself lives in `App.js` (Firebase `onAuthStateChanged`), not in `screens/AuthLoadingScreen.js`, which exists but is unused/unwired.
 
+**Crash/error monitoring** (`App.js`): `@sentry/react-native`, initialized module-scope at the top of `App.js` with `dsn: SENTRY_DSN` (from `@env`) and `enabled: !__DEV__`. Screen-context breadcrumbs come from a plain `Sentry.addBreadcrumb()` call in `NavigationContainer`'s `onStateChange` handler (logs `previousRoute -> currentRoute` on every real screen change), which also sets a `screen` tag on each transition so issues can be filtered/searched by screen in the Sentry dashboard — both are aimed at pinpointing which screen the recurring `RetryableMountingLayerException` (a Fabric UI-thread exception) happens on. The root component is exported via `Sentry.wrap(App)`. Note: JS-reachable capture only — this does not by itself add native-level (AndroidManifest/Info.plist) init; native Java/Kotlin crashes are caught separately by the Sentry Android SDK's own uncaught-exception handler, installed automatically via autolinking.
+
+**Performance tracing** (`App.js`): `tracesSampleRate: 0.2` (traces ~1 in 5 sessions — deliberately sampled rather than 100%, to keep the added network/battery cost small), plus `enableNativeFramesTracking` (dropped/frozen UI frames) and `enableStallTracking` (JS-thread stalls) for spotting general app slowdown. `Sentry.reactNavigationIntegration()` is registered against the same `navigationRef` used for breadcrumbs (via `registerNavigationContainer` in `NavigationContainer`'s `onReady`) so screen-transition timing shows up as performance data too. This is an intentional change from the SDK's original "error-only, no tracing" setup — revisit `tracesSampleRate` if event volume/cost becomes a concern, or if 20% isn't catching enough real-world slow sessions.
+
 ### Dead code — don't assume these are active
+
 Confirmed unreferenced anywhere in the app (found while adding test coverage):
+
 - `navigation/1_StackNavigator.js` — a second, unused stack navigator; `App.js` builds its own `Stack.Navigator` inline instead.
 - `screens/AuthLoadingScreen.js` — unused; its `navigation.replace(...)` calls are commented out.
 - `components/theme/themeContext.js` — unused, and would throw if imported: it imports from `./themes`, but the actual file is `./theme.js`.
 
 ### Known limitations / paused work
+
 - **Header/tab-bar auto-hide-on-scroll is intentionally paused.** It was driven by `postMessage` events bridged out of the WebView, which couldn't be made flicker-free (JS-thread latency on every scroll event). `AppLayout.js` (`scrollProgress` prop) and `TabNavigator.js` (`AnimatedTabBar`, currently commented out of the `tabBar` prop) still contain scaffolding for it. Re-enabling `AnimatedTabBar` without first moving chapter rendering off WebView previously reproduced a `Cannot read property 'forEach' of null` crash on every tab press — the planned real fix is migrating `ChapterContentScreen` to `react-native-render-html` + a native `ScrollView`, which would allow native `Animated.event`-driven scrolling instead of the WebView bridge.
 - **Android shadow rendering**: RN 0.77 has a bug where `elevation` + `borderRadius` on Android renders a distorted, rectangular ("black box") shadow instead of following rounded corners. Rounded cards/buttons use the New Architecture's `boxShadow` style prop instead (e.g. `WelcomeScreen.js`, `ChapterContentScreen.js`'s `circleButton`). Full-width/rectangular elements (`AppLayout.js`'s header) still use legacy `elevation`/`shadow*` props — that's intentional, not an oversight.
 - **Edge-to-edge (Android 15 / SDK 35)**: `MainActivity.kt` uses `androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)` in `onCreate`, not `androidx.activity.enableEdgeToEdge()` — the latter needs an `androidx.activity-ktx` dependency this project doesn't declare.
