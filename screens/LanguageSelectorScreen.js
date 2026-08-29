@@ -8,6 +8,7 @@ import RNFS from 'react-native-fs';
 import { getDBConnection_local } from '../database/Database';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Toast from 'react-native-toast-message';
 // If using Expo instead of react-native-vector-icons, use this import:
 // import Icon from '@expo/vector-icons/Ionicons';
 
@@ -21,7 +22,7 @@ const LANGUAGE_OPTIONS = [
 ];
 
 export default function LanguageSelectorScreen({ navigation }) {
-  const { isFirstTime, language, setLanguage, isLoading: isLanguageLoading } = useLanguage();
+  const { isFirstTime, language, setLanguage, hasLanguageSet, isLoading: isLanguageLoading } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState({});
   const [checkingFiles, setCheckingFiles] = useState(true);
@@ -43,9 +44,16 @@ export default function LanguageSelectorScreen({ navigation }) {
     option.label.toLowerCase().includes(searchQuery.trim().toLowerCase())
   );
 
-  const downloadedItems = filteredOptions.filter(
-    (opt) => downloadStatus[opt.value] === 'downloaded'
-  );
+  const downloadedItems = filteredOptions
+    .filter((opt) => downloadStatus[opt.value] === 'downloaded')
+    // The currently-active language should be the first thing the user
+    // sees, not wherever it happens to fall in LANGUAGE_OPTIONS order.
+    // Everything else keeps its existing relative order (stable sort).
+    .sort((a, b) => {
+      if (a.value === language) return -1;
+      if (b.value === language) return 1;
+      return 0;
+    });
   const downloadingItems = filteredOptions.filter(
     (opt) => downloadStatus[opt.value] === 'downloading'
   );
@@ -328,12 +336,37 @@ export default function LanguageSelectorScreen({ navigation }) {
         </View>
         
         {!isDownloaded && !isDownloading && (
-          <TouchableOpacity 
+          <TouchableOpacity
+            testID={`download-button-${item.value}`}
             style={styles.downloadButton}
             activeOpacity={0.7}
             onPress={async () => {
               try {
                 await downloadDatabase(item.value);
+                // FIX ("download button doesn't set language"): a first-time
+                // user who downloads via this button (rather than tapping
+                // the row) previously ended up with the file on disk but
+                // hasLanguageSet still false — stuck being redirected back
+                // to this screen from every other tab (see the
+                // RetryableMountingLayerException crash reports this was
+                // added in response to). If nothing is selected yet,
+                // downloading a language IS selecting it.
+                if (!hasLanguageSet) {
+                  await setLanguage(item.value);
+                  navigation.navigate('Sections', { language: item.value });
+                } else {
+                  // Returning user pre-fetching an additional language -
+                  // download only, don't switch away from their current
+                  // language. The "Tap to switch" button that now appears
+                  // on this row (plus this toast) tell them a further tap
+                  // is needed to actually start reading in it.
+                  Toast.show({
+                    type: 'info',
+                    text1: `${item.label} downloaded`,
+                    text2: `Tap "Switch to ${item.label}" to start reading in it`,
+                    position: 'bottom',
+                  });
+                }
               } catch (error) {
                 Alert.alert(
                   error.isOffline ? 'No Internet' : 'Download Failed',
@@ -346,6 +379,23 @@ export default function LanguageSelectorScreen({ navigation }) {
           >
             <Icon name="download-outline" size={16} color="white" style={styles.downloadButtonIcon} />
             <Text style={styles.downloadButtonText}>Download</Text>
+          </TouchableOpacity>
+        )}
+
+        {isDownloaded && !isCurrentLanguage && (
+          // Explicit, discoverable affordance for "this is downloaded but
+          // not active yet" - tapping anywhere else on the row already
+          // switches to it (see the row's own onPress above), but that's
+          // not obvious, which is exactly what left users stuck after using
+          // the Download button above with a language already set.
+          <TouchableOpacity
+            testID={`switch-button-${item.value}`}
+            style={styles.switchButton}
+            activeOpacity={0.7}
+            onPress={() => handleLanguageChange(item.value)}
+          >
+            <Icon name="swap-horizontal-outline" size={16} color="white" style={styles.downloadButtonIcon} />
+            <Text style={styles.downloadButtonText}>Switch to {item.label}</Text>
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -576,6 +626,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.3,
+  },
+  switchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    // Teal - close enough to the app's green to feel part of the same
+    // family, but distinct from the green "Download" button and the blue
+    // "downloading" status color so it reads as its own action.
+    backgroundColor: '#2E9E8F',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    boxShadow: [{ offsetX: 0, offsetY: 2, blurRadius: 4, color: 'rgba(46, 158, 143, 0.3)' }],
   },
   loadingText: {
     marginTop: 10,

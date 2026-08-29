@@ -32,6 +32,18 @@ const ChapterContentScreen = ({ navigation, route }) => {
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentChapterId, setCurrentChapterId] = useState(chapterId);
+  // FIX ("next/previous double-tap collapses into a single advance"): the
+  // Next/Previous buttons used to compute their target as
+  // `currentChapterId +/- 1`, but currentChapterId only updates via the
+  // effect below, which only fires after navigation.navigate() round-trips
+  // back through route.params. A second tap landing before that round-trip
+  // completes read the same stale currentChapterId as the first tap, so
+  // both taps resolved to the same target chapter instead of advancing
+  // twice (reproduced in __tests__/screens/ChapterContentScreen.test.js).
+  // A ref write is synchronous and immediate - unlike state, there's no
+  // window where a rapid second tap could observe a stale value, no matter
+  // how close together the taps land or how React batches the update.
+  const currentChapterIdRef = useRef(chapterId);
   const [maxChapterId, setMaxChapterId] = useState(0);
   const { fontSize, increaseFont, decreaseFont } = useFontSize();
   const webViewRef = useRef(null);
@@ -73,14 +85,19 @@ const ChapterContentScreen = ({ navigation, route }) => {
     }
   }, []);
 
-  const goToChapter = useCallback(async (chapterId) => {
+  const goToChapter = useCallback(async (targetChapterId) => {
+    // Update the ref (and the state that drives the disabled-boundary UI)
+    // immediately, before the async save/navigate below - see the note on
+    // currentChapterIdRef's declaration for why this needs to be synchronous.
+    currentChapterIdRef.current = targetChapterId;
+    setCurrentChapterId(targetChapterId);
     try {
-      console.log("navigating to chapter: " + chapterId);
-      await saveLastReadChapter(chapterId);
+      console.log("navigating to chapter: " + targetChapterId);
+      await saveLastReadChapter(targetChapterId);
     } catch (e) {
       console.log('Error during save:', e);
     }
-    navigation.navigate('ChapterContent', { chapterId, language });
+    navigation.navigate('ChapterContent', { chapterId: targetChapterId, language });
   }, [navigation, language, saveLastReadChapter]);
 
   const handleLoadEnd = useCallback(() => {
@@ -132,9 +149,16 @@ const ChapterContentScreen = ({ navigation, route }) => {
   }, [fontSize, updateFontSizeInWebView]);
 
   // ✅ Separate effect for chapter ID changes - cleaner separation of concerns
+  // Also the sync point for chapter changes that don't come from the
+  // Next/Previous buttons below (e.g. tapping a chapter directly in
+  // ChapterListScreen while this tab is already mounted) - goToChapter
+  // already updates the ref/state itself for its own case, so this is a
+  // no-op re-confirmation on that path, but the only source of truth on
+  // any other path.
   useEffect(() => {
     console.log("Chapter ID changed to: " + chapterId);
     setCurrentChapterId(chapterId);
+    currentChapterIdRef.current = chapterId;
   }, [chapterId]);
 
   // FIX: only persist "lastReadChapter" once a language is actually set.
@@ -208,7 +232,8 @@ const ChapterContentScreen = ({ navigation, route }) => {
       */}
       <View style={[styles.navContainer, { bottom: 20 }]}>
         <TouchableOpacity
-          onPress={() => goToChapter(currentChapterId - 1)}
+          testID="chapter-nav-prev"
+          onPress={() => goToChapter(currentChapterIdRef.current - 1)}
           disabled={currentChapterId <= 1}
           activeOpacity={0.7}
           style={[styles.circleButton, currentChapterId <= 1 && styles.disabledButton]}>
@@ -216,7 +241,8 @@ const ChapterContentScreen = ({ navigation, route }) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => goToChapter(currentChapterId + 1)}
+          testID="chapter-nav-next"
+          onPress={() => goToChapter(currentChapterIdRef.current + 1)}
           disabled={currentChapterId >= maxChapterId}
           activeOpacity={0.7}
           style={[styles.circleButton, currentChapterId >= maxChapterId && styles.disabledButton]}>

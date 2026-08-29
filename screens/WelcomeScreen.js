@@ -39,6 +39,15 @@ const WelcomeScreen = ({ navigation }) => {
         <View style={styles.titleAccent} />
         <Text style={styles.tagline}>A resource for every season of ministry</Text>
 
+        <TouchableOpacity
+          style={styles.button}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate("Shepherd's Staff")}
+        >
+          <Text style={styles.buttonText}>Start Reading</Text>
+          <Icon name="arrow-forward" size={18} color="#fff" style={styles.buttonIcon} />
+        </TouchableOpacity>
+
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
             <Icon name="shield-checkmark-outline" size={16} color="#4CAF50" style={styles.infoIcon} />
@@ -65,15 +74,6 @@ const WelcomeScreen = ({ navigation }) => {
             </Text>
           </View>
         </View>
-
-        <TouchableOpacity
-          style={styles.button}
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate("Shepherd's Staff")}
-        >
-          <Text style={styles.buttonText}>Start Reading</Text>
-          <Icon name="arrow-forward" size={18} color="#fff" style={styles.buttonIcon} />
-        </TouchableOpacity>
       </View>
     </LinearGradient>
   );
@@ -135,16 +135,25 @@ const styles = StyleSheet.create({
   infoCard: {
     backgroundColor: 'white',
     borderRadius: 12,
+    // UX FIX: softened per the Welcome-screen critique — this card sits
+    // below the CTA now (was above it), so it's closing/secondary content
+    // rather than something that should visually compete with the button.
+    // Lighter border (closer to the background than the old #ddd), a
+    // barely-there shadow instead of a visible one, and less padding so it
+    // reads as a quiet footer panel rather than a boxed feature card.
     borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 18,
-    marginBottom: 24,
+    borderColor: '#eee',
+    padding: 13,
+    // Card now comes after the button (was before it) - top margin
+    // separates it from the button above instead of bottom margin
+    // separating it from what used to follow.
+    marginTop: 24,
     width: '100%',
     // FIX: elevation + borderRadius is a known RN 0.77 Android bug — the
     // shadow renders as a distorted rectangle instead of following the
     // rounded corners, showing up as a dark box around the card. boxShadow
     // (New Architecture, already enabled) is correct on both platforms.
-    boxShadow: [{ offsetX: 0, offsetY: 2, blurRadius: 4, color: 'rgba(0, 0, 0, 0.08)' }],
+    boxShadow: [{ offsetX: 0, offsetY: 1, blurRadius: 2, color: 'rgba(0, 0, 0, 0.04)' }],
   },
   infoRow: {
     flexDirection: 'row',
