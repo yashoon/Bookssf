@@ -86,6 +86,13 @@ const renderChapterScreen = (initialChapterId) => {
 
 describe('ChapterContentScreen - last-read-chapter tracking via next/previous', () => {
   it('saves the correct lastReadChapter after pressing Next then Previous', async () => {
+    // FIX (CI flake): two full navigation round-trips (Next, then Previous),
+    // each with its own waitFor + manual rerender - the heaviest test in
+    // this file. Comfortably under a second locally, but slower/more
+    // contended on GitHub's shared runners (plus --coverage instrumentation
+    // overhead) was enough to occasionally exceed Jest's default 5000ms
+    // per-test timeout there. Bumped just this test rather than the global
+    // timeout, since the other two tests in this file don't need it.
     const { goTo, findByTestId } = renderChapterScreen(2);
 
     await findByTestId('chapter-nav-next');
@@ -104,7 +111,7 @@ describe('ChapterContentScreen - last-read-chapter tracking via next/previous', 
     await waitFor(async () =>
       expect(await AsyncStorage.getItem('lastReadChapter')).toBe('2'),
     );
-  });
+  }, 15000);
 
   it('FIXED: pressing Next twice rapidly (no rerender in between) advances two chapters, not one', async () => {
     const { navigation, findByTestId, getByTestId } = renderChapterScreen(1);

@@ -47,6 +47,13 @@ beforeEach(async () => {
 
 describe('LanguageSelectorScreen - Download button behavior', () => {
   it('first-time user (no language set): tapping Download also selects that language and navigates to Sections', async () => {
+    // FIX (CI flake): this is the first test in the file, paying the cold
+    // -start cost of the initial LanguageProvider mount + checkAllLanguages
+    // effect. Comfortably under a second locally, but GitHub's shared
+    // ubuntu-latest runners are slower and --coverage adds Istanbul
+    // instrumentation overhead on top - enough to occasionally exceed
+    // Jest's default 5000ms per-test timeout there. Bumped just this test
+    // rather than the global timeout, since nothing else needs it.
     const navigation = { navigate: jest.fn() };
     const { getByTestId, findByText, unmount } = renderScreen(navigation);
 
@@ -65,7 +72,7 @@ describe('LanguageSelectorScreen - Download button behavior', () => {
     expect(getDBConnection_local).toHaveBeenCalledWith('english');
     expect(await AsyncStorage.getItem('selectedLanguage')).toBe('english');
     unmount();
-  });
+  }, 15000);
 
   it('returning user (language already set): tapping Download on another language only downloads it, does not switch, and prompts the user to tap to switch', async () => {
     // Seed an existing selection (English) before the screen mounts.
