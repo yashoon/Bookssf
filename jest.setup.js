@@ -46,13 +46,23 @@ jest.mock('@react-native-community/netinfo', () => ({
   addEventListener: jest.fn(),
 }));
 jest.mock('sp-react-native-in-app-updates', () => {
-  return jest.fn().mockImplementation(() => ({
+  // FIX: this mock previously had no IAUUpdateKind export at all, so
+  // App.js's `import SpInAppUpdates, {IAUUpdateKind} from '...'` resolved
+  // IAUUpdateKind to undefined under Jest — harmless as long as nothing
+  // exercised the startUpdate() call path, but a real crash waiting to
+  // happen (`Cannot read properties of undefined`) the moment a test
+  // actually renders App.js and hits it. Attached directly to the mock
+  // function itself (rather than returned as {default, IAUUpdateKind}) so
+  // Babel's CJS interop still resolves the default import correctly.
+  const SpInAppUpdates = jest.fn().mockImplementation(() => ({
     addStatusUpdateListener: jest.fn(),
     removeStatusUpdateListener: jest.fn(),
     checkNeedsUpdate: jest.fn(() => Promise.resolve({shouldUpdate: false})),
-    startUpdate: jest.fn(),
+    startUpdate: jest.fn(() => Promise.resolve()),
     installUpdate: jest.fn(),
   }));
+  SpInAppUpdates.IAUUpdateKind = {FLEXIBLE: 0, IMMEDIATE: 1};
+  return SpInAppUpdates;
 });
 jest.mock('@react-native-google-signin/google-signin', () => ({
   GoogleSignin: {

@@ -86,7 +86,10 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
-  const handleForgotPassword = async () => {
+  // Validates the email field exactly as before, then asks the user to
+  // confirm via a native decision dialog instead of sending the reset email
+  // immediately.
+  const handleForgotPassword = () => {
     if (!email) {
       setErrors({ email: "Email is required to send reset link!" });
       return;
@@ -97,6 +100,18 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
+    Alert.alert(
+      'Reset Password',
+      `Send a password reset email to ${email}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Send', onPress: confirmForgotPassword },
+      ],
+    );
+  };
+
+  // The actual send, triggered only once the user confirms in the dialog.
+  const confirmForgotPassword = async () => {
     try {
       await sendPasswordResetEmail(auth, email);
       Alert.alert('Password Reset Sent', `A reset link was sent to ${email}`);
@@ -264,7 +279,7 @@ export default function LoginScreen({ navigation }) {
             critique — a user realizes they're stuck on their password
             before they attempt to submit, not after, so this should be
             reachable without scrolling past the button first. */}
-        <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotPasswordLink}>
+        <TouchableOpacity testID="forgot-password-link" onPress={handleForgotPassword} style={styles.forgotPasswordLink}>
           <Text style={styles.link}>Forgot Password?</Text>
         </TouchableOpacity>
 

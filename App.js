@@ -107,8 +107,19 @@ function App() {
     inAppUpdates
       .checkNeedsUpdate()
       .then(result => {
-        if (result.shouldUpdate) {
-          inAppUpdates.startUpdate({
+        // FIX (uncaught "Update type unavailable" exception, seen firing on
+        // every app restart in production): `shouldUpdate` only means "some
+        // update is available" — it does NOT mean the FLEXIBLE type
+        // requested below is actually allowed for this install (Play Store
+        // track/eligibility can restrict which update types are offered).
+        // Calling startUpdate() with a type checkNeedsUpdate() didn't
+        // confirm throws exactly this error, per the library's own message.
+        // Also: startUpdate()'s promise was previously never returned into
+        // this chain, so its rejection had no .catch() to land in and
+        // surfaced as a raw unhandled promise rejection instead of a quiet,
+        // logged failure like every other path here.
+        if (result.shouldUpdate && result.isFlexibleUpdateAllowed) {
+          return inAppUpdates.startUpdate({
             updateType: IAUUpdateKind.FLEXIBLE,
           });
         }

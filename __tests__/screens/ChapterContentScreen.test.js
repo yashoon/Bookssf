@@ -173,3 +173,58 @@ describe('ChapterContentScreen - last-read-chapter tracking via next/previous', 
     expect(params.chapterId).toBe(3);
   });
 });
+
+// FIX (unhandled promise rejection + stuck spinner, confirmed via a real
+// crash log: "Software caused connection abort" when a shared
+// getDBConnection_local download was aborted while the app was
+// backgrounded): the data-loading effect's .catch() used to be attached
+// only to the inner Promise.all(...), not to getDBConnection_local(...)
+// itself, so a rejection from that outer call had nothing to catch it.
+// These tests exercise the real effect directly, rather than a copy of its
+// logic, so they fail if the fix regresses.
+describe('ChapterContentScreen - data-load error handling', () => {
+  it('shows a retryable error message when getDBConnection_local rejects, instead of an unhandled rejection', async () => {
+    getDBConnection_local.mockRejectedValueOnce(new Error('Software caused connection abort'));
+
+    const { findByText } = renderChapterScreen(1);
+
+    expect(
+      await findByText('Something went wrong while loading this chapter. Please try again.'),
+    ).toBeTruthy();
+  });
+
+  it('shows the friendly isOffline message as-is rather than the generic fallback', async () => {
+    const offlineError = new Error('No internet connection. Connect to the internet to download the english language pack.');
+    offlineError.isOffline = true;
+    getDBConnection_local.mockRejectedValueOnce(offlineError);
+
+    const { findByText } = renderChapterScreen(1);
+
+    expect(await findByText(offlineError.message)).toBeTruthy();
+  });
+
+  it('shows the friendly isCorrupt message as-is rather than the generic fallback', async () => {
+    const corruptError = new Error('The downloaded language file appears to be corrupted. Please try downloading it again.');
+    corruptError.isCorrupt = true;
+    getDBConnection_local.mockRejectedValueOnce(corruptError);
+
+    const { findByText } = renderChapterScreen(1);
+
+    expect(await findByText(corruptError.message)).toBeTruthy();
+  });
+
+  it('recovers when Retry is pressed and the next attempt succeeds', async () => {
+    getDBConnection_local.mockRejectedValueOnce(new Error('Software caused connection abort'));
+
+    const { findByText, findByTestId } = renderChapterScreen(1);
+
+    await findByText('Something went wrong while loading this chapter. Please try again.');
+
+    // beforeEach's default mockResolvedValue({}) takes over now that the
+    // one-time rejection above has been consumed.
+    fireEvent.press(await findByTestId('chapter-content-retry'));
+
+    await findByTestId('chapter-nav-next');
+    expect(getDBConnection_local).toHaveBeenCalledTimes(2);
+  });
+});

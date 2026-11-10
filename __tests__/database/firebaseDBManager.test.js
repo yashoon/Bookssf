@@ -66,6 +66,71 @@ describe('ensureDatabaseExists', () => {
     });
 
     await expect(ensureDatabaseExists('english')).rejects.toThrow();
+    // Nothing was ever written to disk in this case (RNFS.exists is false
+    // throughout), so there's nothing to clean up.
+    expect(RNFS.unlink).not.toHaveBeenCalled();
+  });
+
+  // FIX (log analysis of a live "no such table: sections" crash,
+  // 2026-09-08): RNFS.downloadFile() writes bytes directly to the
+  // destination path as they arrive rather than to a temp file it renames on
+  // success, so an aborted download (e.g. the app backgrounding mid-transfer
+  // - confirmed via Sentry: "Software caused connection abort" logged right
+  // after an app.lifecycle "background" event) leaves a partial, unusable
+  // file sitting at the exact path this function's own dbExists check looks
+  // at. On the very next call, if the version check *also* fails (a common
+  // pairing right after a backgrounding/foregrounding cycle interrupts
+  // connectivity), localVersion/remoteVersion both fall back to '' and
+  // compare equal, so the function concludes "already up to date" and hands
+  // back a path to that corrupt partial file instead of retrying. These
+  // tests exercise the cleanup added to prevent that: any failure removes
+  // whatever partial file might have been left behind, so the next call
+  // sees a clean dbExists: false and genuinely retries the download.
+  describe('cleanup after a failed download', () => {
+    it('removes a partial download file left behind when the download itself fails', async () => {
+      // First RNFS.exists call is the function's own initial dbExists check
+      // (no file yet); the second is the cleanup check after the download
+      // has failed, simulating the partial file the failed download left on
+      // disk.
+      RNFS.exists.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+      axios.get.mockResolvedValue({ status: 200, data: { english: '1.3' } });
+      RNFS.downloadFile.mockReturnValue({
+        promise: Promise.reject(new Error('Software caused connection abort')),
+      });
+
+      await expect(ensureDatabaseExists('english')).rejects.toThrow(
+        'Software caused connection abort',
+      );
+
+      expect(RNFS.unlink).toHaveBeenCalledWith('/mock/library/english.db');
+    });
+
+    it('still surfaces the original download error even if the cleanup unlink itself fails', async () => {
+      RNFS.exists.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+      axios.get.mockResolvedValue({ status: 200, data: { english: '1.3' } });
+      RNFS.downloadFile.mockReturnValue({
+        promise: Promise.reject(new Error('Software caused connection abort')),
+      });
+      RNFS.unlink.mockRejectedValueOnce(new Error('unlink failed'));
+
+      await expect(ensureDatabaseExists('english')).rejects.toThrow(
+        'Software caused connection abort',
+      );
+    });
+
+    it('does not attempt cleanup when no file was ever written', async () => {
+      // Both calls to RNFS.exists (initial check, cleanup check) report no
+      // file - e.g. the failure happened before any bytes were written.
+      RNFS.exists.mockResolvedValue(false);
+      axios.get.mockResolvedValue({ status: 200, data: { english: '1.3' } });
+      RNFS.downloadFile.mockReturnValue({
+        promise: Promise.reject(new Error('Software caused connection abort')),
+      });
+
+      await expect(ensureDatabaseExists('english')).rejects.toThrow();
+
+      expect(RNFS.unlink).not.toHaveBeenCalled();
+    });
   });
 
   it('downloads when the version check succeeds and reports a newer remote version', async () => {

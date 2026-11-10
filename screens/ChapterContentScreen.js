@@ -31,6 +31,10 @@ const ChapterContentScreen = ({ navigation, route }) => {
   const { width } = useWindowDimensions();
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(true);
+  // FIX ("no such table"/"connection abort" errors surfacing as unhandled
+  // promise rejections instead of a retryable message): see the note above
+  // the data-loading effect below.
+  const [errorMessage, setErrorMessage] = useState('');
   const [currentChapterId, setCurrentChapterId] = useState(chapterId);
   // FIX ("next/previous double-tap collapses into a single advance"): the
   // Next/Previous buttons used to compute their target as
@@ -118,16 +122,29 @@ const ChapterContentScreen = ({ navigation, route }) => {
     }
   }, [language, isLanguageLoading, navigation]);
 
-  // ✅ Main data loading effect - only run when language changes
-  useEffect(() => {
+  // FIX (unhandled promise rejection, confirmed via a real crash log:
+  // "Software caused connection abort" when a shared getDBConnection_local
+  // download was aborted by the OS while the app was backgrounded): the
+  // .catch() below used to be attached only to the inner Promise.all(...),
+  // not to getDBConnection_local(language) itself. A rejection from that
+  // outer call (a failed/aborted download, or the "no such table" corrupt-
+  // file case) had nothing to catch it, and `loading` was never flipped
+  // back to false — the exact same "unhandled rejection + stuck spinner"
+  // failure mode already fixed in SectionMenuScreen and ChapterListScreen,
+  // just never applied here. Mirrors their same error-message/Retry
+  // pattern (including the isOffline/isCorrupt markers from
+  // firebaseDBManager.js and Database.js) rather than inventing a new one.
+  const loadContents = useCallback(() => {
     if (!language) return;
 
     console.log("Loading data for language: " + language);
     setLoading(true);
-    
-    // Use Promise.all for better performance and error handling
+    setErrorMessage('');
+
     getDBConnection_local(language).then((db) => {
-      Promise.all([
+      // Returned so a failure here also lands in the .catch() below,
+      // instead of only the getDBConnection_local(language) rejection case.
+      return Promise.all([
         getUsers(db, 'contents'),
         getMaxChapterId(db, 'contents')
       ]).then(([users, maxId]) => {
@@ -135,13 +152,22 @@ const ChapterContentScreen = ({ navigation, route }) => {
         setContents(users);
         setMaxChapterId(maxId);
         setLoading(false);
-      }).catch((error) => {
-        console.log("Database error: " + error);
-        setLoading(false);
       });
+    }).catch((error) => {
+      console.log("Database error: " + error);
+      setErrorMessage(
+        error.isOffline || error.isCorrupt
+          ? error.message
+          : 'Something went wrong while loading this chapter. Please try again.',
+      );
+      setLoading(false);
     });
+  }, [language]);
 
-  }, [language, isLanguageLoading]); // ✅ Only depend on language - prevents unnecessary database calls
+  // ✅ Main data loading effect - only run when language changes
+  useEffect(() => {
+    loadContents();
+  }, [loadContents, isLanguageLoading]); // ✅ Only depend on language - prevents unnecessary database calls
 
   // ✅ Separate effect for font size updates - prevents mixing concerns
   useEffect(() => {
@@ -204,7 +230,23 @@ const ChapterContentScreen = ({ navigation, route }) => {
             no-behavior-change hardening several people reported reduced
             crash frequency for the same pattern. */}
         <View style={styles.container} collapsable={false}>
-          {loading || !contentMap[chapterId]?.content ? (
+          {errorMessage ? (
+            <View style={styles.loadingContainer}>
+              <Icon name="alert-circle" size={28} color="#F44336" style={{ marginBottom: 10 }} />
+              <Text style={[styles.loadingText, { color: '#F44336', fontWeight: '600' }]}>
+                {errorMessage}
+              </Text>
+              <TouchableOpacity
+                testID="chapter-content-retry"
+                style={styles.retryButton}
+                activeOpacity={0.7}
+                onPress={loadContents}
+              >
+                <Icon name="refresh-outline" size={16} color="white" style={styles.retryButtonIcon} />
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : loading || !contentMap[chapterId]?.content ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="green" style={styles.spinner} />
               <Text style={styles.loadingText}>Loading content...</Text>
@@ -296,6 +338,28 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#ccc',
     boxShadow: [],
+  },
+  // Matches the Retry button styling already used in SectionMenuScreen and
+  // ChapterListScreen for the same kind of error state.
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    marginTop: 16,
+    boxShadow: [{ offsetX: 0, offsetY: 2, blurRadius: 4, color: 'rgba(76, 175, 80, 0.3)' }],
+  },
+  retryButtonIcon: {
+    marginRight: 6,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });
 

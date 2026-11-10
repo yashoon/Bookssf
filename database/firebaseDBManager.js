@@ -240,6 +240,27 @@ export const ensureDatabaseExists = async (language, onProgress) => {
     // return targetDBPath; // Return the path where the DB is stored
   } catch (err) {
     console.error('⚠️ DB fetch/setup failed:', err.message);
+    // FIX ("no such table: sections" after a backgrounded/interrupted
+    // download, confirmed via a live Sentry log): RNFS.downloadFile()
+    // writes bytes directly to `localPath` as they arrive rather than to a
+    // temp file it renames on success, so an aborted download (e.g. the app
+    // backgrounding mid-transfer, "Software caused connection abort") can
+    // leave a partial, unusable file sitting at the exact path this
+    // function's own dbExists check looks at. Without cleanup here, a later
+    // call sees dbExists: true, and if that later call's version check also
+    // fails (localVersion/remoteVersion both fall back to '' and compare
+    // equal), it concludes "DB already up to date" and hands back a path to
+    // that corrupt partial file instead of retrying the download. Removing
+    // any partial file on failure means every failure - regardless of cause
+    // - leaves a clean slate (dbExists: false) for the next attempt.
+    try {
+      if (await RNFS.exists(localPath)) {
+        await RNFS.unlink(localPath);
+        console.log(`🗑️ Removed partial/failed download: ${localPath}`);
+      }
+    } catch (cleanupErr) {
+      console.warn('Failed to remove partial download file:', cleanupErr.message);
+    }
     throw err;
   }
 };

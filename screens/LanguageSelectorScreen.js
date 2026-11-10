@@ -17,7 +17,7 @@ const LANGUAGE_OPTIONS = [
   { label: 'Nepali', value: 'nepali' },
   { label: 'हिन्दी', value: 'hindi' },
   // { label: 'తెలుగు', value: 'telugu' },
-  // { label: 'Kiswahili', value: 'swahili' },
+  { label: 'Kiswahili', value: 'swahili' },
   // Add more as needed 
 ];
 
